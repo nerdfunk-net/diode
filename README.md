@@ -22,7 +22,8 @@ nerdfunk is a nifi based Diode to transfer data to a separate network.
 Nerdfunk is based on nifi, an open source flow management system (http://nifi.apache.org)
 
 A list of technologies used within the project:
-* [Nifi](http://nifi.apache.org): Version 1.14.0
+* [Nifi](http://nifi.apache.org): Version 1.13.2 or
+* [Nifi](http://nifi.apache.org): Version 1.14.0 or
 * [Java](https://adoptopenjdk.net): Version 11
 
 
