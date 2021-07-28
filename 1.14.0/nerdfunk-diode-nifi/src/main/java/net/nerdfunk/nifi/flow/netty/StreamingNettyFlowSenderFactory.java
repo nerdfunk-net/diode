@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.nifi.event.transport.netty;
+package net.nerdfunk.nifi.flow.netty;
 
 import io.netty.handler.stream.ChunkedWriteHandler;
 import java.io.InputStream;
@@ -22,13 +22,13 @@ import java.util.Arrays;
 import org.apache.nifi.event.transport.netty.codec.InputStreamMessageEncoder;
 import org.apache.nifi.event.transport.configuration.TransportProtocol;
 import org.apache.nifi.event.transport.netty.channel.LogExceptionChannelHandler;
-import org.apache.nifi.event.transport.netty.codec.InputStreamFlowHeaderEncoder;
+import net.nerdfunk.nifi.flow.netty.codec.InputStreamFlowHeaderEncoder;
 import org.apache.nifi.logging.ComponentLog;
 
 /**
  * Netty Event Sender Factory for messages in an InputStream
  */
-public class StreamingNettyFlowSenderFactory extends NettyEventSenderFactory<InputStream> {
+public class StreamingNettyFlowSenderFactory extends NettyFlowSenderFactory<InputStream> {
     /**
      * Netty Event Sender Factory using InputStream. Uses a custom InputStreamMessageEncoder and a ChunkedWriteHandler.
      *

@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.nifi.event.transport.netty.codec;
+package net.nerdfunk.nifi.flow.netty.codec;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
-import org.apache.nifi.event.transport.message.FlowMessage;
+import net.nerdfunk.nifi.flow.message.FlowMessage;
 
 /**
  * Message encoder for our FlowMessage Header

@@ -23,7 +23,7 @@ Nerdfunk is based on nifi, an open source flow management system (http://nifi.ap
 
 A list of technologies used within the project:
 * [Nifi](http://nifi.apache.org): Version 1.13.2 or
-* [Nifi](http://nifi.apache.org): Version 1.14.0 or
+* [Nifi](http://nifi.apache.org): Version 1.14.0 and
 * [Java](https://adoptopenjdk.net): Version 11
 
 

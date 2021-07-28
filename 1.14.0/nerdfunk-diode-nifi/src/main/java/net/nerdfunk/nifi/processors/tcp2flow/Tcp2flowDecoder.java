@@ -78,7 +78,7 @@ public class Tcp2flowDecoder extends ByteToMessageDecoder {
                 this.headerlength = buf.readInt();
                 // set received bytes to 0 it is a new flow
                 this.bytesReceived = 0;
-                logger.debug("hl: " + this.headerlength);
+                logger.debug("headerlength: " + this.headerlength);
                 // move to next header field
                 this.state = State.PAYLOADLENGTH;
                 break;
@@ -88,16 +88,19 @@ public class Tcp2flowDecoder extends ByteToMessageDecoder {
                 }
                 buf.markReaderIndex();
                 this.payloadlength = buf.readLong();
-                logger.debug("pl: " + this.payloadlength);
+                logger.debug("payloadlength: " + this.payloadlength);
                 if (this.headerlength == 0) {
                     // we do not have a header
+                    logger.debug("no header");
                     this.state = State.PAYLOAD;
                 }
                 else {
                     // we have a json header
                     this.state = State.HEADER;
                 }
+                break;
             case HEADER:
+                logger.debug("got header reading " + this.headerlength);
                 if (buf.readableBytes() < this.headerlength) {
                     return;
                 }
@@ -109,10 +112,13 @@ public class Tcp2flowDecoder extends ByteToMessageDecoder {
 
                 if (this.payloadlength == 0) {
                     // 0 byte file; in this case we do not get a payload
+                    logger.debug("empty message");
                     sendMessage(null, out);
                 }
+                logger.debug("done");
                 break;
             case PAYLOAD:
+                logger.debug("got payload");
                 int length = buf.readableBytes();
                 if (this.bytesReceived + length > this.payloadlength) {
                     length = toIntExact(this.payloadlength - this.bytesReceived);
@@ -131,6 +137,7 @@ public class Tcp2flowDecoder extends ByteToMessageDecoder {
                 /*
                  * set Tcp2flowMessage values that are used by our handler
                  */
+                logger.debug("sending message");
                 sendMessage(bytes, out);
 
                 /*
@@ -170,6 +177,9 @@ public class Tcp2flowDecoder extends ByteToMessageDecoder {
             // tell handler that this is the last message for this flow
             logger.debug("this is the last message. Got " + this.bytesReceived + " bytes");
             message.setIsLastMessage(true);
+        }
+        else {
+            logger.debug("got so far: br:" + " pl:" + this.payloadlength);
         }
 
         out.add(message);

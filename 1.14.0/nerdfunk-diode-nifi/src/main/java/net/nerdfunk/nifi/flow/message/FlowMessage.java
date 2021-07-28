@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.nifi.event.transport.message;
+package net.nerdfunk.nifi.flow.message;
 
 public class FlowMessage {
 

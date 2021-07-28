@@ -27,16 +27,15 @@ import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.event.transport.configuration.TransportProtocol;
-import org.apache.nifi.event.transport.netty.NettyEventSenderFactory;
-import org.apache.nifi.event.transport.netty.StreamingNettyFlowSenderFactory;
-import org.apache.nifi.event.transport.message.FlowMessage;
+import net.nerdfunk.nifi.flow.netty.NettyFlowSenderFactory;
+import net.nerdfunk.nifi.flow.netty.StreamingNettyFlowSenderFactory;
+import net.nerdfunk.nifi.flow.message.FlowMessage;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessSessionFactory;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.io.InputStreamCallback;
-import org.apache.nifi.processor.util.put.AbstractPutEventProcessor;
 import org.apache.nifi.util.StopWatch;
 import java.io.IOException;
 import java.io.InputStream;
@@ -115,14 +114,13 @@ import org.apache.nifi.processor.util.StandardValidators;
         + "specified to change the behaviour so that each FlowFiles content is transmitted over a single TCP connection which is opened when the FlowFile "
         + "is received and closed after the FlowFile has been sent. This option should only be used for low message volume scenarios, otherwise the platform " + "may run out of TCP sockets.")
 @InputRequirement(Requirement.INPUT_REQUIRED)
-@SeeAlso(ListenTCP2flow.class)
+//@SeeAlso(ListenTCP.class)
 @Tags({"remote", "egress", "put", "tcp"})
 @TriggerWhenEmpty // trigger even when queue is empty so that the processor can check for idle senders to prune.
-public class PutFlow2TCP extends AbstractPutEventProcessor {
+public class PutFlow2TCP extends AbstractPutFlowProcessor {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final String AT_LIST_SEPARATOR = ",";
-    private int version = 0;
 
     public static final PropertyDescriptor ATTRIBUTES_LIST = new PropertyDescriptor.Builder()
             .name("Attributes List")
@@ -353,13 +351,13 @@ public class PutFlow2TCP extends AbstractPutEventProcessor {
             header.setPayloadlength(flowFile.getSize());
             header.setHeader(attributesAsBytes);
             getLogger().debug("sending header: hl:" + headerLength + " pl: " + flowFile.getSize());
-            eventSender.sendEvent(header);
+            flowSender.sendFlow(header, true);
 
             // now send payload
             session.read(flowFile, new InputStreamCallback() {
                 @Override
                 public void process(final InputStream in) throws IOException {
-                    eventSender.sendEvent(in);
+                    flowSender.sendFlow(in, false);
                 }
             });
             getLogger().debug("finished sending file");
@@ -402,7 +400,7 @@ public class PutFlow2TCP extends AbstractPutEventProcessor {
      * @return 
      */
     @Override
-    protected NettyEventSenderFactory<?> getNettyEventSenderFactory(final String hostname, final int port, final String protocol) {
+    protected NettyFlowSenderFactory<?> getNettyFlowSenderFactory(final String hostname, final int port, final String protocol) {
         return new StreamingNettyFlowSenderFactory(getLogger(), hostname, port, TransportProtocol.valueOf(protocol));
     }
 
