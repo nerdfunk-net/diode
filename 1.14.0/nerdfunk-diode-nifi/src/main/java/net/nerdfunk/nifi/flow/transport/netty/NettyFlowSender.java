@@ -14,14 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.nerdfunk.nifi.flow.netty;
+package net.nerdfunk.nifi.flow.transport.netty;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.pool.ChannelPool;
 import io.netty.util.concurrent.Future;
-import org.apache.nifi.event.transport.EventException;
+import net.nerdfunk.nifi.flow.transport.FlowException;
 import net.nerdfunk.nifi.flow.transport.FlowSender;
 
 import java.net.SocketAddress;
@@ -38,7 +38,7 @@ class NettyFlowSender<T> implements FlowSender<T> {
 
     private final SocketAddress remoteAddress;
 
-    private boolean singleEventPerConnection;
+    private boolean singleFlowPerConnection;
 
     /**
      * Netty Channel Event Sender with Event Loop Group and Channel Pool
@@ -48,11 +48,58 @@ class NettyFlowSender<T> implements FlowSender<T> {
      * @param remoteAddress Remote Address
      * @param singleEventPerConnection If true, send a single event per connection, and then close it.
      */
-    NettyFlowSender(final EventLoopGroup group, final ChannelPool channelPool, final SocketAddress remoteAddress, final boolean singleEventPerConnection) {
+    NettyFlowSender(final EventLoopGroup group, final ChannelPool channelPool, final SocketAddress remoteAddress, final boolean singleFlowPerConnection) {
         this.group = group;
         this.channelPool = channelPool;
         this.remoteAddress = remoteAddress;
-        this.singleEventPerConnection = singleEventPerConnection;
+        this.singleFlowPerConnection = singleFlowPerConnection;
+    }
+
+    /**
+     * Aquires a new channel from Channel Pool
+     */
+    @Override
+    public Channel acquireChannel() {
+        try {
+            final Future<Channel> futureChannel = channelPool.acquire().sync();
+            final Channel channel = futureChannel.get();
+            return channel;
+        } catch (final Exception e) {
+            throw new FlowException(getChannelMessage("aquire channel Failed"), e);
+        }
+    }
+
+    /**
+     * sends data and flushes channel
+     * 
+     * @param channel
+     * @param data 
+     */
+    @Override
+    public void sendAndFlush(Channel channel, final T data) {
+            final ChannelFuture channelFuture = channel.writeAndFlush(data);
+            channelFuture.syncUninterruptibly();
+    }
+
+    /**
+     * send data
+     * 
+     * @param channel
+     * @param data 
+     */
+    @Override
+    public void send(Channel channel, final T data) {
+            final ChannelFuture channelFuture = channel.write(data);
+            channelFuture.syncUninterruptibly();
+    }
+    /**
+     * realeases channel
+     * 
+     * @param channel 
+     */
+    @Override
+    public void realeaseChannel(Channel channel) {
+        releaseChannel(channel);
     }
 
     /**
@@ -61,7 +108,7 @@ class NettyFlowSender<T> implements FlowSender<T> {
      * @param event Event
      */
     @Override
-    public void sendFlow(final T event, boolean keepopen) { 
+    public void sendFlow(final T event) { 
         try {
             final Future<Channel> futureChannel = channelPool.acquire().sync();
             final Channel channel = futureChannel.get();
@@ -69,15 +116,10 @@ class NettyFlowSender<T> implements FlowSender<T> {
                 final ChannelFuture channelFuture = channel.writeAndFlush(event);
                 channelFuture.syncUninterruptibly();
             } finally {
-                if (keepopen) {
-                    channelPool.release(channel);
-                }
-                else {
                     releaseChannel(channel);
-                }
             }
         } catch (final Exception e) {
-            throw new EventException(getChannelMessage("Send Failed"), e);
+            throw new FlowException(getChannelMessage("Send Failed"), e);
         }
     }
 
@@ -100,7 +142,7 @@ class NettyFlowSender<T> implements FlowSender<T> {
      */
     @Override
     public String toString() {
-        return getChannelMessage("Event Sender");
+        return getChannelMessage("Flow Sender");
     }
 
     private String getChannelMessage(final String message) {
@@ -108,7 +150,7 @@ class NettyFlowSender<T> implements FlowSender<T> {
     }
 
     private void releaseChannel(final Channel channel) {
-        if (singleEventPerConnection) {
+        if (singleFlowPerConnection) {
             channel.close();
         }
         channelPool.release(channel);

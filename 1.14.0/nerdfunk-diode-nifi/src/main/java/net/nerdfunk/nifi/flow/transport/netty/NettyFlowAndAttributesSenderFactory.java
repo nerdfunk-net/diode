@@ -14,21 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.nerdfunk.nifi.flow.netty;
+package net.nerdfunk.nifi.flow.transport.netty;
 
 import io.netty.handler.stream.ChunkedWriteHandler;
 import java.io.InputStream;
 import java.util.Arrays;
-import org.apache.nifi.event.transport.netty.codec.InputStreamMessageEncoder;
-import org.apache.nifi.event.transport.configuration.TransportProtocol;
-import org.apache.nifi.event.transport.netty.channel.LogExceptionChannelHandler;
-import net.nerdfunk.nifi.flow.netty.codec.InputStreamFlowHeaderEncoder;
+import net.nerdfunk.nifi.flow.transport.netty.codec.InputStreamMessageEncoder;
+import net.nerdfunk.nifi.flow.transport.configuration.TransportProtocol;
+import net.nerdfunk.nifi.flow.transport.netty.channel.LogExceptionChannelHandler;
+import net.nerdfunk.nifi.flow.transport.netty.codec.InputStreamFlowHeaderEncoder;
 import org.apache.nifi.logging.ComponentLog;
 
 /**
  * Netty Event Sender Factory for messages in an InputStream
  */
-public class StreamingNettyFlowSenderFactory extends NettyFlowSenderFactory<InputStream> {
+public class NettyFlowAndAttributesSenderFactory extends NettyFlowSenderFactory<InputStream> {
     /**
      * Netty Event Sender Factory using InputStream. Uses a custom InputStreamMessageEncoder and a ChunkedWriteHandler.
      *
@@ -37,7 +37,7 @@ public class StreamingNettyFlowSenderFactory extends NettyFlowSenderFactory<Inpu
      * @param port Remote Port Number
      * @param protocol Channel Protocol
      */
-    public StreamingNettyFlowSenderFactory(final ComponentLog log, final String address, final int port, final TransportProtocol protocol) {
+    public NettyFlowAndAttributesSenderFactory(final ComponentLog log, final String address, final int port, final TransportProtocol protocol) {
         super(address, port, protocol);
         final LogExceptionChannelHandler logExceptionChannelHandler = new LogExceptionChannelHandler(log);
         final InputStreamFlowHeaderEncoder inputStreamFlowHeaderEncoder = new InputStreamFlowHeaderEncoder();

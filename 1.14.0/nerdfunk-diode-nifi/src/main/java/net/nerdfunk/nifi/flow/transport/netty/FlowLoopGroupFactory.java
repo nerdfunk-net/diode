@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.nerdfunk.nifi.flow.netty;
+package net.nerdfunk.nifi.flow.transport.netty;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -24,10 +24,10 @@ import java.util.Objects;
 import java.util.concurrent.ThreadFactory;
 
 /**
- * Event Loop Group Factory for standardized instance creation
+ * Flow Loop Group Factory for standardized instance creation
  */
-class EventLoopGroupFactory {
-    private static final String DEFAULT_THREAD_NAME_PREFIX = "NettyEventLoopGroup";
+class FlowLoopGroupFactory {
+    private static final String DEFAULT_THREAD_NAME_PREFIX = "NettyFlowLoopGroup";
 
     private static final boolean DAEMON_THREAD_ENABLED = true;
 
@@ -53,7 +53,7 @@ class EventLoopGroupFactory {
         this.workerThreads = workerThreads;
     }
 
-    protected EventLoopGroup getEventLoopGroup() {
+    protected EventLoopGroup getFlowLoopGroup() {
         return new NioEventLoopGroup(workerThreads, getThreadFactory());
     }
 

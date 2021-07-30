@@ -63,8 +63,8 @@ public class Tcp2flow {
      * 
      */
     public void stop() {
-        eventServer.shutdown();
         this.running = false;
+        eventServer.shutdown();
         this.tcp2flowconfiguration.getLogger().info("Tcp2flow server stopped");
     }
 

@@ -17,15 +17,16 @@
 package net.nerdfunk.nifi.flow.transport;
 
 /**
- * Flow Sender Factory
- *
- * @param <T> Flow Type
+ * Event Exception indicating issues when transporting events
  */
-public interface FlowSenderFactory<T> {
+public class FlowException extends RuntimeException {
     /**
-     * Get Flow Sender
+     * Flow Exception
      *
-     * @return Flow Sender
+     * @param message Message
+     * @param cause Throwable cause
      */
-    FlowSender<T> getFlowSender();
+    public FlowException(final String message, final Throwable cause) {
+        super(message, cause);
+    }
 }

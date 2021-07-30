@@ -16,16 +16,46 @@
  */
 package net.nerdfunk.nifi.flow.transport;
 
+import io.netty.channel.Channel;
+
 /**
- * Event Sender
+ * Flow Sender
  *
- * @param <T> Event Type
+ * @param <T> Flow Type
  */
 public interface FlowSender<T> extends AutoCloseable {
     /**
-     * Send Event
+     * Send Flow
      *
-     * @param event Event
+     * @param flow Flow
      */
-    void sendFlow(T event, boolean keepopen);
+    void sendFlow(T flow);
+
+    /**
+     * Aquires a new channel from Channel Pool
+     */
+    public Channel acquireChannel();
+
+    /**
+     * sends data and flushes channel
+     * 
+     * @param channel
+     * @param data 
+     */
+    public void sendAndFlush(Channel channel, final T data);
+
+    /**
+     * send data
+     * 
+     * @param channel
+     * @param data 
+     */
+    public void send(Channel channel, final T data);
+
+    /**
+     * realeases channel
+     * 
+     * @param channel 
+     */
+    public void realeaseChannel(Channel channel);
 }

@@ -26,10 +26,11 @@ import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.components.PropertyDescriptor;
-import org.apache.nifi.event.transport.configuration.TransportProtocol;
-import net.nerdfunk.nifi.flow.netty.NettyFlowSenderFactory;
-import net.nerdfunk.nifi.flow.netty.StreamingNettyFlowSenderFactory;
-import net.nerdfunk.nifi.flow.message.FlowMessage;
+import net.nerdfunk.nifi.flow.transport.configuration.TransportProtocol;
+import net.nerdfunk.nifi.flow.transport.netty.NettyFlowSenderFactory;
+import net.nerdfunk.nifi.flow.transport.netty.NettyFlowAndAttributesSenderFactory;
+import net.nerdfunk.nifi.flow.transport.netty.NettyFlowContentOnlySenderFactory;
+import net.nerdfunk.nifi.flow.transport.message.FlowMessage;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
@@ -52,6 +53,9 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.nifi.flowfile.attributes.CoreAttributes;
 import org.apache.nifi.processor.util.StandardValidators;
+import io.netty.channel.Channel;
+import org.apache.nifi.annotation.lifecycle.OnScheduled;
+import org.apache.nifi.components.AllowableValue;
 
 /**
  * <p>
@@ -114,8 +118,8 @@ import org.apache.nifi.processor.util.StandardValidators;
         + "specified to change the behaviour so that each FlowFiles content is transmitted over a single TCP connection which is opened when the FlowFile "
         + "is received and closed after the FlowFile has been sent. This option should only be used for low message volume scenarios, otherwise the platform " + "may run out of TCP sockets.")
 @InputRequirement(Requirement.INPUT_REQUIRED)
-//@SeeAlso(ListenTCP.class)
-@Tags({"remote", "egress", "put", "tcp"})
+@SeeAlso(ListenTCP2flow.class)
+@Tags({"remote", "egress", "put", "tcp", "flow", "tcp2flow"})
 @TriggerWhenEmpty // trigger even when queue is empty so that the processor can check for idle senders to prune.
 public class PutFlow2TCP extends AbstractPutFlowProcessor {
 
@@ -147,7 +151,7 @@ public class PutFlow2TCP extends AbstractPutFlowProcessor {
     public static final PropertyDescriptor INCLUDE_ATTRIBUTES = new PropertyDescriptor.Builder()
             .name("Include Attributes")
             .description("Determines if the FlowFile attributes which are "
-                    + "contained in every FlowFile should be included in the final JSON value generated.")
+                    + "contained in every FlowFile should be sent to the destination.")
             .required(true)
             .allowableValues("true", "false")
             .defaultValue("true")
@@ -172,6 +176,16 @@ public class PutFlow2TCP extends AbstractPutFlowProcessor {
             .defaultValue("false")
             .build();
 
+    public static final AllowableValue FLOW_AND_ATTRIBUTES = new AllowableValue("FlowAndAttributes", "Flow and attributes");
+    public static final AllowableValue FLOW_ONLY = new AllowableValue("FLOWONLY", "Flow only");
+    public static final PropertyDescriptor ENCODER = new PropertyDescriptor
+            .Builder().name("Encoder")
+            .description("The encoder.")
+            .required(true)
+            .allowableValues(FLOW_AND_ATTRIBUTES, FLOW_ONLY)
+            .defaultValue(FLOW_AND_ATTRIBUTES.getValue())
+            .build();
+    
     /**
      * Creates a Universal Resource Identifier (URI) for this processor.
      * Constructs a URI of the form TCP://< host >:< port > where the host and
@@ -191,7 +205,6 @@ public class PutFlow2TCP extends AbstractPutFlowProcessor {
     }
 
     private static Object tryJson(final String value) {
-
         try {
             return objectMapper.readValue(value, JsonNode.class);
         } catch (final JsonProcessingException e) {
@@ -209,78 +222,72 @@ public class PutFlow2TCP extends AbstractPutFlowProcessor {
         return Arrays.asList(CONNECTION_PER_FLOWFILE,
                 ATTRIBUTES_LIST,
                 ATTRIBUTES_REGEX,
-                INCLUDE_ATTRIBUTES,
                 INCLUDE_CORE_ATTRIBUTES,
                 NULL_VALUE_FOR_EMPTY_STRING,
                 TIMEOUT,
                 SSL_CONTEXT_SERVICE,
-                CHARSET);
+                CHARSET,
+                ENCODER);
     }
 
     /**
-     * Builds the Map of attributes that should be included in the JSON that is
-     * emitted from this process.
+     * Builds the Map of attributes that should be included in the JSON that 
+     * is emitted from this process.
      *
-     * @param flowFile
+     * @param ff
      * @param attributes
      * @param attributesToRemove
      * @param nullValForEmptyString
      * @param attPattern
      * @return Map of values that are feed to a Jackson ObjectMapper
      */
-    protected Map<String, Object> buildAttributesMapForFlowFile(
-            final FlowFile flowFile,
-            final Set<String> attributes,
-            final Set<String> attributesToRemove,
-            final boolean nullValForEmptyString,
-            final Pattern attPattern) {
-
-        Map<String, Object> result;
-
+    protected Map<String, String> buildAttributesMapForFlowFile(
+            FlowFile ff,
+            Set<String> attributes,
+            Set<String> attributesToRemove,
+            boolean nullValForEmptyString,
+            Pattern attPattern) {
+        Map<String, String> result;
         //If list of attributes specified get only those attributes. Otherwise write them all
         if (attributes != null || attPattern != null) {
-
             result = new HashMap<>();
-
             if (attributes != null) {
-                for (final String attribute : attributes) {
-                    final String val = flowFile.getAttribute(attribute);
+                for (String attribute : attributes) {
+                    String val = ff.getAttribute(attribute);
                     if (val != null || nullValForEmptyString) {
-                        result.put(attribute, tryJson(val));
+                        result.put(attribute, val);
                     } else {
                         result.put(attribute, "");
                     }
                 }
             }
-
             if (attPattern != null) {
-                for (final Map.Entry<String, String> e : flowFile.getAttributes().entrySet()) {
+                for (Map.Entry<String, String> e : ff.getAttributes().entrySet()) {
                     if (attPattern.matcher(e.getKey()).matches()) {
                         result.put(e.getKey(), e.getValue());
                     }
                 }
             }
         } else {
-            final Map<String, String> flowFileAttributes = flowFile.getAttributes();
-            result = new HashMap<>(flowFileAttributes.size());
-
-            for (final Map.Entry<String, String> e : flowFileAttributes.entrySet()) {
+            Map<String, String> ffAttributes = ff.getAttributes();
+            result = new HashMap<>(ffAttributes.size());
+            for (Map.Entry<String, String> e : ffAttributes.entrySet()) {
                 if (!attributesToRemove.contains(e.getKey())) {
-                    result.put(e.getKey(), tryJson(e.getValue()));
+                    result.put(e.getKey(), e.getValue());
                 }
             }
         }
         return result;
     }
 
-    private Set<String> buildAtrs(final String atrList, final Set<String> atrsToExclude) {
+    private Set<String> buildAtrs(String atrList, Set<String> atrsToExclude) {
         //If list of attributes specified get only those attributes. Otherwise write them all
         if (StringUtils.isNotBlank(atrList)) {
-            final String[] ats = StringUtils.split(atrList, AT_LIST_SEPARATOR);
+            String[] ats = StringUtils.split(atrList, AT_LIST_SEPARATOR);
             if (ats != null) {
-                final Set<String> result = new HashSet<>(ats.length);
-                for (final String str : ats) {
-                    final String trim = str.trim();
+                Set<String> result = new HashSet<>(ats.length);
+                for (String str : ats) {
+                    String trim = str.trim();
                     if (!atrsToExclude.contains(trim)) {
                         result.add(trim);
                     }
@@ -290,7 +297,7 @@ public class PutFlow2TCP extends AbstractPutFlowProcessor {
         }
         return null;
     }
-    
+
     /**
      * event handler method to handle the FlowFile being forwarded to the
      * Processor by the framework. The FlowFile contents and its attributes 
@@ -305,6 +312,7 @@ public class PutFlow2TCP extends AbstractPutFlowProcessor {
      */
     @Override
     public void onTrigger(final ProcessContext context, final ProcessSessionFactory sessionFactory) throws ProcessException {
+        final String configured_encoder = context.getProperty(ENCODER).evaluateAttributeExpressions().getValue();
         final ProcessSession session = sessionFactory.createSession();
         final FlowFile flowFile = session.get();
         if (flowFile == null) {
@@ -314,8 +322,6 @@ public class PutFlow2TCP extends AbstractPutFlowProcessor {
         /*
          * prepare attributes
          */
-        
-        final boolean sendAttributes = context.getProperty(INCLUDE_ATTRIBUTES).asBoolean();
         int headerLength = 0;
         Pattern pattern = null;
 
@@ -329,7 +335,7 @@ public class PutFlow2TCP extends AbstractPutFlowProcessor {
             pattern = Pattern.compile(context.getProperty(ATTRIBUTES_REGEX).evaluateAttributeExpressions().getValue());
         }
 
-        final Map<String, Object> attributeList = buildAttributesMapForFlowFile(
+        final Map<String, String> attributeList = buildAttributesMapForFlowFile(
                 flowFile,
                 attributes,
                 attributesToRemove,
@@ -339,27 +345,31 @@ public class PutFlow2TCP extends AbstractPutFlowProcessor {
         try {
             StopWatch stopWatch = new StopWatch(true);
 
+            // get channel
+            Channel channel = flowSender.acquireChannel();
+
             // get attributes
             byte[] attributesAsBytes = objectMapper.writeValueAsBytes(attributeList);
-            if (sendAttributes) {
-                headerLength = attributesAsBytes.length;
-            }
+            headerLength = attributesAsBytes.length;
 
             // send header first
-            FlowMessage header = new FlowMessage();
-            header.setHeaderlength(headerLength);
-            header.setPayloadlength(flowFile.getSize());
-            header.setHeader(attributesAsBytes);
-            getLogger().debug("sending header: hl:" + headerLength + " pl: " + flowFile.getSize());
-            flowSender.sendFlow(header, true);
-
+            if (FLOW_AND_ATTRIBUTES.getValue().equalsIgnoreCase(configured_encoder)) {
+                FlowMessage header = new FlowMessage();
+                header.setHeaderlength(headerLength);
+                header.setPayloadlength(flowFile.getSize());
+                header.setHeader(attributesAsBytes);
+                getLogger().debug("sending header: hl:" + headerLength + " pl: " + flowFile.getSize());
+                flowSender.sendAndFlush(channel, header);
+            }
+            
             // now send payload
             session.read(flowFile, new InputStreamCallback() {
                 @Override
                 public void process(final InputStream in) throws IOException {
-                    flowSender.sendFlow(in, false);
+                    flowSender.sendAndFlush(channel, in);
                 }
             });
+            flowSender.realeaseChannel(channel);
             getLogger().debug("finished sending file");
             session.getProvenanceReporter().send(flowFile, transitUri, stopWatch.getElapsed(TimeUnit.MILLISECONDS));
             session.transfer(flowFile, REL_SUCCESS);
@@ -371,7 +381,7 @@ public class PutFlow2TCP extends AbstractPutFlowProcessor {
     }
 
     /**
-     * Event handler method to perform the required actions when a failure has
+     * Flow handler method to perform the required actions when a failure has
      * occurred. The FlowFile is penalized, forwarded to the failure
      * relationship and the context is yielded.
      *
@@ -392,16 +402,27 @@ public class PutFlow2TCP extends AbstractPutFlowProcessor {
     }
 
     /**
-     * returns the StreamingNettyFlowSenderFactory
+     * returns the NettyFlowAndAttributesSenderFactory
      * 
+     * @param context
      * @param hostname
      * @param port
      * @param protocol
      * @return 
      */
     @Override
-    protected NettyFlowSenderFactory<?> getNettyFlowSenderFactory(final String hostname, final int port, final String protocol) {
-        return new StreamingNettyFlowSenderFactory(getLogger(), hostname, port, TransportProtocol.valueOf(protocol));
+    protected NettyFlowSenderFactory<?> getNettyFlowSenderFactory(
+            final ProcessContext context,
+            final String hostname, 
+            final int port, 
+            final String protocol) {
+
+        final String configured_encoder = context.getProperty(ENCODER).evaluateAttributeExpressions().getValue();
+        
+        if (FLOW_ONLY.getValue().equalsIgnoreCase(configured_encoder)) {
+                return new NettyFlowContentOnlySenderFactory(getLogger(), hostname, port, TransportProtocol.valueOf(protocol));
+        }
+        return new NettyFlowAndAttributesSenderFactory(getLogger(), hostname, port, TransportProtocol.valueOf(protocol));
     }
 
 }

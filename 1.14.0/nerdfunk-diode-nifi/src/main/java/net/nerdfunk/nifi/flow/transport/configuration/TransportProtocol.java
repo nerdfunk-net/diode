@@ -14,18 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.nerdfunk.nifi.flow.transport;
+package net.nerdfunk.nifi.flow.transport.configuration;
 
 /**
- * Flow Sender Factory
- *
- * @param <T> Flow Type
+ * Transport Protocol
  */
-public interface FlowSenderFactory<T> {
-    /**
-     * Get Flow Sender
-     *
-     * @return Flow Sender
-     */
-    FlowSender<T> getFlowSender();
+public enum TransportProtocol {
+    TCP,
+    UDP
 }

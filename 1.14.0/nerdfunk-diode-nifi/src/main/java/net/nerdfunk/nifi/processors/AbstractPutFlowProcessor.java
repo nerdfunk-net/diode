@@ -22,9 +22,9 @@ import org.apache.nifi.components.AllowableValue;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.PropertyValue;
 import net.nerdfunk.nifi.flow.transport.FlowSender;
-import org.apache.nifi.event.transport.configuration.TransportProtocol;
-import net.nerdfunk.nifi.flow.netty.ByteArrayNettyFlowSenderFactory;
-import net.nerdfunk.nifi.flow.netty.NettyFlowSenderFactory;
+import net.nerdfunk.nifi.flow.transport.configuration.TransportProtocol;
+import net.nerdfunk.nifi.flow.transport.netty.NettyFlowSenderFactory;
+import net.nerdfunk.nifi.flow.transport.netty.NettyFlowAndAttributesSenderFactory;
 import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.AbstractSessionFactoryProcessor;
@@ -97,19 +97,6 @@ public abstract class AbstractPutFlowProcessor extends AbstractSessionFactoryPro
             .allowableValues(TCP_VALUE, UDP_VALUE)
             .defaultValue(TCP_VALUE.getValue())
             .build();
-    public static final PropertyDescriptor MESSAGE_DELIMITER = new PropertyDescriptor.Builder()
-            .name("Message Delimiter")
-            .description("Specifies the delimiter to use for splitting apart multiple messages within a single FlowFile. "
-                    + "If not specified, the entire content of the FlowFile will be used as a single message. "
-                    + "If specified, the contents of the FlowFile will be split on this delimiter and each section "
-                    + "sent as a separate message. Note that if messages are delimited and some messages for a given FlowFile "
-                    + "are transferred successfully while others are not, the messages will be split into individual FlowFiles, such that those "
-                    + "messages that were successfully sent are routed to the 'success' relationship while other messages are sent to the 'failure' "
-                    + "relationship.")
-            .required(false)
-            .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-            .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
-            .build();
     public static final PropertyDescriptor CHARSET = new PropertyDescriptor.Builder()
             .name("Character Set")
             .description("Specifies the character set of the data being sent.")
@@ -125,16 +112,6 @@ public abstract class AbstractPutFlowProcessor extends AbstractSessionFactoryPro
             .defaultValue("10 seconds")
             .addValidator(StandardValidators.TIME_PERIOD_VALIDATOR)
             .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)
-            .build();
-    public static final PropertyDescriptor OUTGOING_MESSAGE_DELIMITER = new PropertyDescriptor.Builder()
-            .name("Outgoing Message Delimiter")
-            .description("Specifies the delimiter to use when sending messages out over the same TCP stream. The delimiter is appended to each FlowFile message "
-                    + "that is transmitted over the stream so that the receiver can determine when one message ends and the next message begins. Users should "
-                    + "ensure that the FlowFile content does not contain the delimiter character to avoid errors. In order to use a new line character you can "
-                    + "enter '\\n'. For a tab character use '\\t'. Finally for a carriage return use '\\r'.")
-            .required(false)
-            .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-            .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
             .build();
     public static final PropertyDescriptor CONNECTION_PER_FLOWFILE = new PropertyDescriptor.Builder()
             .name("Connection Per FlowFile")
@@ -164,6 +141,7 @@ public abstract class AbstractPutFlowProcessor extends AbstractSessionFactoryPro
     private List<PropertyDescriptor> descriptors;
 
     protected volatile String transitUri;
+    protected volatile String encoder;
     protected FlowSender flowSender;
 
     protected final BlockingQueue<FlowFileMessageBatch> completeBatches = new LinkedBlockingQueue<>();
@@ -243,14 +221,14 @@ public abstract class AbstractPutFlowProcessor extends AbstractSessionFactoryPro
         final String hostname = context.getProperty(HOSTNAME).evaluateAttributeExpressions().getValue();
         final int port = context.getProperty(PORT).evaluateAttributeExpressions().asInteger();
         final String protocol = getProtocol(context);
-        final boolean singleEventPerConnection = context.getProperty(CONNECTION_PER_FLOWFILE).getValue() != null ? context.getProperty(CONNECTION_PER_FLOWFILE).asBoolean() : false;
+        final boolean singleFlowPerConnection = context.getProperty(CONNECTION_PER_FLOWFILE).getValue() != null ? context.getProperty(CONNECTION_PER_FLOWFILE).asBoolean() : false;
 
-        final NettyFlowSenderFactory factory = getNettyFlowSenderFactory(hostname, port, protocol);
+        final NettyFlowSenderFactory factory = getNettyFlowSenderFactory(context, hostname, port, protocol);
         factory.setThreadNamePrefix(String.format("%s[%s]", getClass().getSimpleName(), getIdentifier()));
         factory.setWorkerThreads(context.getMaxConcurrentTasks());
         factory.setMaxConnections(context.getMaxConcurrentTasks());
         factory.setSocketSendBufferSize(context.getProperty(MAX_SOCKET_SEND_BUFFER_SIZE).asDataSize(DataUnit.B).intValue());
-        factory.setSingleEventPerConnection(singleEventPerConnection);
+        factory.setSingleFlowPerConnection(singleFlowPerConnection);
 
         final int timeout = context.getProperty(TIMEOUT).evaluateAttributeExpressions().asTimePeriod(TimeUnit.MILLISECONDS).intValue();
         factory.setTimeout(Duration.ofMillis(timeout));
@@ -286,7 +264,6 @@ public abstract class AbstractPutFlowProcessor extends AbstractSessionFactoryPro
         public int getNumConsidered() {
             return numConsidered;
         }
-
     }
 
 
@@ -475,29 +452,11 @@ public abstract class AbstractPutFlowProcessor extends AbstractSessionFactoryPro
         }
     }
 
-    /**
-     * Gets the current value of the "Outgoing Message Delimiter" property and parses the special characters.
-     *
-     * @param context
-     *            - the current process context.
-     * @param flowFile
-     *            - the FlowFile being processed.
-     *
-     * @return String containing the Delimiter value.
-     */
-    protected String getOutgoingMessageDelimiter(final ProcessContext context, final FlowFile flowFile) {
-        String delimiter = context.getProperty(OUTGOING_MESSAGE_DELIMITER).evaluateAttributeExpressions(flowFile).getValue();
-        if (delimiter != null) {
-            delimiter = delimiter.replace("\\n", "\n").replace("\\r", "\r").replace("\\t", "\t");
-        }
-        return delimiter;
-    }
-
     protected String getProtocol(final ProcessContext context) {
         return context.getProperty(PROTOCOL).getValue();
     }
 
-    protected NettyFlowSenderFactory<?> getNettyFlowSenderFactory(final String hostname, final int port, final String protocol) {
-        return new ByteArrayNettyFlowSenderFactory(getLogger(), hostname, port, TransportProtocol.valueOf(protocol));
+    protected NettyFlowSenderFactory<?> getNettyFlowSenderFactory(final ProcessContext context, final String hostname, final int port, final String protocol) {
+        return new NettyFlowAndAttributesSenderFactory(getLogger(), hostname, port, TransportProtocol.valueOf(protocol));
     }
 }

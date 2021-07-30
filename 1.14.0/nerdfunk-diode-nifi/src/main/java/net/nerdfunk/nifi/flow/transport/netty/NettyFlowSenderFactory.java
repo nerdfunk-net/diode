@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.nerdfunk.nifi.flow.netty;
+package net.nerdfunk.nifi.flow.transport.netty;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -30,10 +30,10 @@ import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import net.nerdfunk.nifi.flow.transport.FlowSender;
 import net.nerdfunk.nifi.flow.transport.FlowSenderFactory;
-import org.apache.nifi.event.transport.configuration.TransportProtocol;
-import org.apache.nifi.event.transport.netty.channel.pool.InitializingChannelPoolHandler;
-import org.apache.nifi.event.transport.netty.channel.ssl.ClientSslStandardChannelInitializer;
-import org.apache.nifi.event.transport.netty.channel.StandardChannelInitializer;
+import net.nerdfunk.nifi.flow.transport.configuration.TransportProtocol;
+import net.nerdfunk.nifi.flow.transport.netty.channel.pool.InitializingChannelPoolHandler;
+import net.nerdfunk.nifi.flow.transport.netty.channel.ssl.ClientSslStandardChannelInitializer;
+import net.nerdfunk.nifi.flow.transport.netty.channel.StandardChannelInitializer;
 
 import javax.net.ssl.SSLContext;
 import java.net.InetSocketAddress;
@@ -45,9 +45,9 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
- * Netty Event Sender Factory
+ * Netty Flow Sender Factory
  */
-public class NettyFlowSenderFactory<T> extends EventLoopGroupFactory implements FlowSenderFactory<T> {
+public class NettyFlowSenderFactory<T> extends FlowLoopGroupFactory implements FlowSenderFactory<T> {
     private static final int MAX_PENDING_ACQUIRES = 1024;
     private Integer socketSendBufferSize = null;
 
@@ -65,7 +65,7 @@ public class NettyFlowSenderFactory<T> extends EventLoopGroupFactory implements 
 
     private SSLContext sslContext;
 
-    private boolean singleEventPerConnection = false;
+    private boolean singleFlowPerConnection = false;
 
     public NettyFlowSenderFactory(final String address, final int port, final TransportProtocol protocol) {
         this.address = address;
@@ -119,24 +119,24 @@ public class NettyFlowSenderFactory<T> extends EventLoopGroupFactory implements 
     }
 
     /**
-     * Send a single event for the session and close the connection. Useful for endpoints which can not be configured
+     * Send a single flow for the session and close the connection. Useful for endpoints which can not be configured
      * to listen for a delimiter.
      *
-     * @param singleEventPerConnection true if the connection should be ended after an event is sent
+     * @param singleFlowPerConnection true if the connection should be ended after an flow is sent
      */
-    public void setSingleEventPerConnection(final boolean singleEventPerConnection) {
-        this.singleEventPerConnection = singleEventPerConnection;
+    public void setSingleFlowPerConnection(final boolean singleFlowPerConnection) {
+        this.singleFlowPerConnection = singleFlowPerConnection;
     }
 
     /*
-     * Get Event Sender with connected Channel
+     * Get Flow Sender with connected Channel
      *
      * @return Connected Event Sender
      */
     public FlowSender<T> getFlowSender() {
         final Bootstrap bootstrap = new Bootstrap();
         bootstrap.remoteAddress(new InetSocketAddress(address, port));
-        final EventLoopGroup group = getEventLoopGroup();
+        final EventLoopGroup group = getFlowLoopGroup();
         bootstrap.group(group);
 
         if (TransportProtocol.UDP.equals(protocol)) {
@@ -146,7 +146,7 @@ public class NettyFlowSenderFactory<T> extends EventLoopGroupFactory implements 
         }
 
         setChannelOptions(bootstrap);
-        return getConfiguredEventSender(bootstrap);
+        return getConfiguredFlowSender(bootstrap);
     }
 
     private void setChannelOptions(final Bootstrap bootstrap) {
@@ -157,10 +157,10 @@ public class NettyFlowSenderFactory<T> extends EventLoopGroupFactory implements 
         }
     }
 
-    private FlowSender<T> getConfiguredEventSender(final Bootstrap bootstrap) {
+    private FlowSender<T> getConfiguredFlowSender(final Bootstrap bootstrap) {
         final SocketAddress remoteAddress = bootstrap.config().remoteAddress();
         final ChannelPool channelPool = getChannelPool(bootstrap);
-        return new NettyFlowSender<>(bootstrap.config().group(), channelPool, remoteAddress, singleEventPerConnection);
+        return new NettyFlowSender<>(bootstrap.config().group(), channelPool, remoteAddress, singleFlowPerConnection);
     }
 
     private ChannelPool getChannelPool(final Bootstrap bootstrap) {
