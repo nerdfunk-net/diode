@@ -33,6 +33,7 @@ public interface FlowSender<T> extends AutoCloseable {
 
     /**
      * Aquires a new channel from Channel Pool
+     * @return 
      */
     public Channel acquireChannel();
 

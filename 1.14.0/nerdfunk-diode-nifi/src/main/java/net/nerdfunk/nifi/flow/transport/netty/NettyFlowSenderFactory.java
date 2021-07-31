@@ -133,6 +133,7 @@ public class NettyFlowSenderFactory<T> extends FlowLoopGroupFactory implements F
      *
      * @return Connected Event Sender
      */
+    @Override
     public FlowSender<T> getFlowSender() {
         final Bootstrap bootstrap = new Bootstrap();
         bootstrap.remoteAddress(new InetSocketAddress(address, port));
