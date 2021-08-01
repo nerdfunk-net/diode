@@ -2,7 +2,7 @@
  ***
  Make your network resilient
  
-This is version 1.13.2. This version is is rather new and not deeply tested yet. 
+This is version 1.13.2.
 
 In addition to the two TCP processors, this version also includes two UDP processors. **All processors have not yet been tested. So use on your own risk.**
 
