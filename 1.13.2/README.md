@@ -1,9 +1,8 @@
 # nerdfunk
  ***
- Make your network resilient
- 
- More information about the nerdfunk Diode can be found at https://nerdfunk.net
- 
+Make your network resilient
+
+This is version 1.13.2. This version is was tested for a longer time.  
  
 ## Table of Contents
 1. [General Info](#general-info)

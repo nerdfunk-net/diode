@@ -1,9 +1,8 @@
 # nerdfunk
  ***
- Make your network resilient
+Make your network resilient
  
- More information about the nerdfunk Diode can be found at https://nerdfunk.net
- 
+The nerdfunk Nifi Processors are used to transfer any data between separated networks. Use PuFlow2TCP to send data and ListenTCP2flow to receive data.  
  
 ## Table of Contents
 1. [General Info](#general-info)
@@ -29,10 +28,12 @@ A list of technologies used within the project:
 
 ## Installation
 ***
+There are two versions. Version 1.13.2 is the 'old' one that is based on Nifi 1.13.2. This version runs for a longer time now and is tested. Version 1.14.0 is based on Nifi 1.14.0 and the event-transport code (netty). This version was not tested in a procution environment.
+
 The installation is quit simple
 ```
 mvn clean install
-copy nerdfunk-flow2network-processors-1.0.nar to ./lib directory of your Nifi installation
+copy nerdfunk-flow2network-processors-1.0.nar to ./lib directory of your Nifi installation (eithe 1.13.2 oder 1.14.0)
 Restart Nifi
 Use PutFlow2Tcp to send TCP flows and ListenTCP2flow to receive TCP flows (or UDP if needed)
 ```
