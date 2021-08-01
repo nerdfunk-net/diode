@@ -16,6 +16,7 @@
  */
 package net.nerdfunk.nifi.processors.tcp2flow;
 
+import net.nerdfunk.nifi.flow.transport.message.FlowMessage;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.buffer.ByteBuf;
@@ -23,7 +24,7 @@ import java.util.List;
 import org.apache.nifi.logging.ComponentLog;
 import static java.lang.Math.toIntExact;
 
-public class Tcp2flowDecoder extends ByteToMessageDecoder {
+public class Tcp2flowAndAttributesDecoder extends ByteToMessageDecoder {
 
     protected int headerlength = 0;
     protected long payloadlength = 0;
@@ -45,7 +46,7 @@ public class Tcp2flowDecoder extends ByteToMessageDecoder {
      * 
      * @param logger 
      */
-    public Tcp2flowDecoder(final ComponentLog logger) {
+    public Tcp2flowAndAttributesDecoder(final ComponentLog logger) {
         super();
         this.initialState = State.HEADERLENGTH;
         this.state = this.initialState;
@@ -160,7 +161,7 @@ public class Tcp2flowDecoder extends ByteToMessageDecoder {
         /*
          * set Tcp2flowMessage values that are used by our handler
          */
-       Tcp2flowMessage message = new Tcp2flowMessage(
+       FlowMessage message = new FlowMessage(
                 this.headerlength,
                 this.payloadlength,
                 this.header,

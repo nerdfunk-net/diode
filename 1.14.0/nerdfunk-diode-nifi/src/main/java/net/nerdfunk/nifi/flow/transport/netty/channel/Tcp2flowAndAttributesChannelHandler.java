@@ -14,8 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.nerdfunk.nifi.processors.tcp2flow;
+package net.nerdfunk.nifi.flow.transport.netty.channel;
 
+import net.nerdfunk.nifi.flow.transport.message.FlowMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -28,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.net.InetSocketAddress;
+import net.nerdfunk.nifi.processors.tcp2flow.Tcp2flowConfiguration;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.logging.ComponentLog;
 import org.apache.nifi.processor.ProcessSession;
@@ -35,7 +37,7 @@ import org.apache.nifi.processor.ProcessSessionFactory;
 import org.apache.nifi.processor.Relationship;
 import org.apache.commons.net.util.SubnetUtils;
 
-public class Tcp2flowReceiverHandler extends SimpleChannelInboundHandler<Tcp2flowMessage> {
+public class Tcp2flowAndAttributesChannelHandler extends SimpleChannelInboundHandler<FlowMessage> {
 
     private final AtomicReference<ProcessSessionFactory> sessionFactory;
     private final CountDownLatch sessionFactorySetSignal;
@@ -52,7 +54,7 @@ public class Tcp2flowReceiverHandler extends SimpleChannelInboundHandler<Tcp2flo
      * 
      * @param tcp2flowconfiguration 
      */
-    Tcp2flowReceiverHandler(Tcp2flowConfiguration tcp2flowconfiguration) {
+    public Tcp2flowAndAttributesChannelHandler(Tcp2flowConfiguration tcp2flowconfiguration) {
         super();
         this.sessionFactory = tcp2flowconfiguration.getProcessSessionFactory();
         this.sessionFactorySetSignal = tcp2flowconfiguration.getSessionFactorySetSignal();
@@ -192,7 +194,7 @@ public class Tcp2flowReceiverHandler extends SimpleChannelInboundHandler<Tcp2flo
      * @throws Exception 
      */
     @Override
-    public void channelRead0(ChannelHandlerContext ctx, Tcp2flowMessage msg) throws Exception {
+    public void channelRead0(ChannelHandlerContext ctx, FlowMessage msg) throws Exception {
     }
 
     /**
@@ -215,8 +217,8 @@ public class Tcp2flowReceiverHandler extends SimpleChannelInboundHandler<Tcp2flo
         /*
          * check if we have a Tcp2flowMessage object
          */
-        if (msg instanceof Tcp2flowMessage) {
-            Tcp2flowMessage tmsg = (Tcp2flowMessage) msg;
+        if (msg instanceof FlowMessage) {
+            FlowMessage tmsg = (FlowMessage) msg;
 
             // if payload != null write incoming data to flow
             if (tmsg.getPayload() != null) {

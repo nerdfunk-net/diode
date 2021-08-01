@@ -33,6 +33,7 @@ public class Tcp2flowConfiguration {
     private final int reader_idle_timeout;
     private final String ipfilterlist;
     private final SSLContextService sslContextService;
+    private final String encoder;
     private final Relationship relationship_success;
     private final Relationship relationship_error;
     private final ComponentLog logger;
@@ -48,6 +49,7 @@ public class Tcp2flowConfiguration {
      * @param reader_idle_timeout
      * @param ipfilterlist
      * @param sslContextService
+     * @param encoder
      * @param relationship_success
      * @param relationship_error
      * @param logger
@@ -59,6 +61,7 @@ public class Tcp2flowConfiguration {
             int reader_idle_timeout,
             String ipfilterlist,
             SSLContextService sslContextService,
+            String encoder,
             Relationship relationship_success,
             Relationship relationship_error,
             ComponentLog logger) throws UnknownHostException {
@@ -69,6 +72,7 @@ public class Tcp2flowConfiguration {
         this.reader_idle_timeout = reader_idle_timeout;
         this.ipfilterlist = ipfilterlist;
         this.sslContextService = sslContextService;
+        this.encoder = encoder;
         this.relationship_success = relationship_success;
         this.relationship_error = relationship_error;
         this.logger = logger;
@@ -203,4 +207,12 @@ public class Tcp2flowConfiguration {
         return logger;
     }
 
+    /**
+     * returns the Encoer 
+     *
+     * @return integer
+     */
+    public String getEncoder() {
+        return encoder;
+    }
 }

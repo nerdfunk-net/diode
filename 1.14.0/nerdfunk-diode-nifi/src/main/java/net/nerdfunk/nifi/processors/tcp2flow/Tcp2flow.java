@@ -20,7 +20,7 @@ import java.util.Objects;
 import org.apache.nifi.processor.exception.ProcessException;
 import java.net.UnknownHostException;
 import javax.net.ssl.SSLContext;
-import org.apache.nifi.event.transport.EventServer;
+import net.nerdfunk.nifi.flow.transport.FlowServer;
 import org.apache.nifi.security.util.ClientAuth;
 import org.apache.nifi.ssl.SSLContextService;
 
@@ -28,7 +28,7 @@ public class Tcp2flow {
 
     private boolean running;
     private final Tcp2flowConfiguration tcp2flowconfiguration;
-    private volatile EventServer eventServer;
+    private volatile FlowServer flowServer;
 
     private Tcp2flow(Tcp2flowConfiguration tcp2flowconfiguration) {
         this.running = false;
@@ -43,7 +43,7 @@ public class Tcp2flow {
      */
     public void start(ClientAuth clientAuth) throws Exception {
 
-        final Tcp2flowNettyEventServerFactory factory = new Tcp2flowNettyEventServerFactory(
+        final Tcp2flowNettyFlowServerFactory factory = new Tcp2flowNettyFlowServerFactory(
             tcp2flowconfiguration
         );
 
@@ -54,7 +54,7 @@ public class Tcp2flow {
             factory.setClientAuth(clientAuth);
         }
 
-        eventServer = factory.getEventServer();
+        flowServer = factory.getFlowServer();
         tcp2flowconfiguration.getLogger().info("Tcp2flow server startet");
     }
 
@@ -64,7 +64,7 @@ public class Tcp2flow {
      */
     public void stop() {
         this.running = false;
-        eventServer.shutdown();
+        flowServer.shutdown();
         this.tcp2flowconfiguration.getLogger().info("Tcp2flow server stopped");
     }
 

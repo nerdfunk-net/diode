@@ -126,4 +126,24 @@ public class FlowMessage {
     public byte[] getPayload() {
         return this.payload;
     }
+    
+    /**
+     * set islastMessage if this is the last bytebuf of the message the message
+     * is then send to the next processor
+     *
+     * @param isLast
+     */
+    public void setIsLastMessage(boolean isLast) {
+        this.islastMessage = isLast;
+    }
+
+    /**
+     * returns true if bytebuf is the last message
+     *
+     * @return boolean
+     */
+    public boolean isLastMessage() {
+        return this.islastMessage;
+    }
+
 }

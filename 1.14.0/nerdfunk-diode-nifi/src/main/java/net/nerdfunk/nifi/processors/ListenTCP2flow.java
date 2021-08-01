@@ -42,6 +42,7 @@ import org.apache.nifi.components.PropertyValue;
 import org.apache.nifi.processor.AbstractSessionFactoryProcessor;
 import net.nerdfunk.nifi.processors.tcp2flow.Tcp2flow;
 import net.nerdfunk.nifi.processors.tcp2flow.Tcp2flowConfiguration;
+import org.apache.nifi.components.AllowableValue;
 import org.apache.nifi.ssl.RestrictedSSLContextService;
 import org.apache.nifi.ssl.SSLContextService;
 import org.apache.nifi.processor.ProcessSessionFactory;
@@ -52,7 +53,7 @@ import org.apache.nifi.security.util.ClientAuth;
 @CapabilityDescription("Listens for incoming TCP connections and reads data from each connection. " +
                        "When using the PutFlow2TCP processor the TCP stream contains the attributes " +
                        "of the origin flowfile. These attributes are written to the new flowfile.")
-//@SeeAlso(PutFlow2TCP.class)
+@SeeAlso(PutFlow2TCP.class)
 @InputRequirement(InputRequirement.Requirement.INPUT_FORBIDDEN)
 public class ListenTCP2flow extends AbstractSessionFactoryProcessor {
 
@@ -118,13 +119,24 @@ public class ListenTCP2flow extends AbstractSessionFactoryProcessor {
         .dependsOn(SSL_CONTEXT_SERVICE)
         .build();
 
+    public static final AllowableValue FLOW_AND_ATTRIBUTES = new AllowableValue("FlowAndAttributes", "Flow and attributes");
+    public static final AllowableValue FLOW_ONLY = new AllowableValue("FLOWONLY", "Flow only");
+    public static final PropertyDescriptor ENCODER = new PropertyDescriptor
+            .Builder().name("Encoder")
+            .description("The encoder.")
+            .required(true)
+            .allowableValues(FLOW_AND_ATTRIBUTES, FLOW_ONLY)
+            .defaultValue(FLOW_AND_ATTRIBUTES.getValue())
+            .build();
+
     private static final List<PropertyDescriptor> PROPERTIES = Collections.unmodifiableList(Arrays.asList(
             BIND_ADDRESS,
             PORT,
             IPFILTERLIST,
             READER_IDLE_TIME,
             SSL_CONTEXT_SERVICE,
-            CLIENT_AUTH
+            CLIENT_AUTH,
+            ENCODER
     ));
 
     public static final Relationship RELATIONSHIP_SUCCESS = new Relationship.Builder()
@@ -179,6 +191,7 @@ public class ListenTCP2flow extends AbstractSessionFactoryProcessor {
             int port = context.getProperty(PORT).evaluateAttributeExpressions().asInteger();
             int reader_idle_timeout = context.getProperty(READER_IDLE_TIME).evaluateAttributeExpressions().asInteger();
             SSLContextService sslContextService = context.getProperty(SSL_CONTEXT_SERVICE).asControllerService(SSLContextService.class);
+            final String configured_encoder = context.getProperty(ENCODER).evaluateAttributeExpressions().getValue();
 
             ClientAuth clientAuth = ClientAuth.REQUIRED;
             final PropertyValue clientAuthProperty = context.getProperty(CLIENT_AUTH);
@@ -193,6 +206,7 @@ public class ListenTCP2flow extends AbstractSessionFactoryProcessor {
                         reader_idle_timeout,
                         ipfilterlist,
                         sslContextService,
+                        configured_encoder,
                         RELATIONSHIP_SUCCESS,
                         RELATIONSHIP_ERROR,
                         getLogger());
