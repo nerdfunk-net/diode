@@ -2,9 +2,8 @@
  ***
  Make your network resilient
  
-This is version 1.14.0. This version is is rather new and not deeply tested yet. 
- 
- 
+This is version 1.14.0. **All processors have not yet been tested. So use on your own risk.**
+
 ## Table of Contents
 1. [General Info](#general-info)
 2. [Technologies](#technologies)
@@ -28,17 +27,17 @@ A list of technologies used within the project:
 
 ## Installation
 ***
-The installation is quit simple
+The installation is quit simple. Please beware: currently there are no tests.
 ```
 mvn clean install
-copy nerdfunk-flow2network-processors-1.0.nar to ./lib directory of your Nifi installation
+copy target/nerdfunk-flow2network-processors-1.0.nar to ./lib or ./extensions directory of your Nifi installation
 Restart Nifi
-Use PutFlow2Tcp to send TCP flows and ListenTCP2flow to receive TCP flows (or UDP if needed)
+Use PutFlow2Tcp to send TCP flows and ListenTCP2flow to receive TCP flows
 ```
 
 ## Collaboration
 ***
-See nerdfunk.net for more details
+There will be a website sonn.
 
 ## FAQs
 ***
