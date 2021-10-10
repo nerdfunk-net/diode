@@ -14,3 +14,5 @@
 # limitations under the License.
 net.nerdfunk.nifi.processors.ListenTCP2flow
 net.nerdfunk.nifi.processors.PutFlow2TCP
+net.nerdfunk.nifi.processors.PutFlow2UDP
+net.nerdfunk.nifi.processors.ListenUDP2flow

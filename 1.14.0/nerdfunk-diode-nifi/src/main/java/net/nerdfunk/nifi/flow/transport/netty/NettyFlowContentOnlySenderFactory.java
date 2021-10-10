@@ -28,8 +28,10 @@ import org.apache.nifi.logging.ComponentLog;
  * Netty Event Sender Factory for messages in an InputStream
  */
 public class NettyFlowContentOnlySenderFactory extends NettyFlowSenderFactory<InputStream> {
+
     /**
-     * Netty Event Sender Factory using InputStream. Uses a custom InputStreamMessageEncoder and a ChunkedWriteHandler.
+     * Netty Event Sender Factory using InputStream. Uses a custom
+     * InputStreamMessageEncoder and a ChunkedWriteHandler.
      *
      * @param log Component Log
      * @param address Remote Address
@@ -38,13 +40,23 @@ public class NettyFlowContentOnlySenderFactory extends NettyFlowSenderFactory<In
      */
     public NettyFlowContentOnlySenderFactory(final ComponentLog log, final String address, final int port, final TransportProtocol protocol) {
         super(address, port, protocol);
-        final LogExceptionChannelHandler logExceptionChannelHandler = new LogExceptionChannelHandler(log);
-        final InputStreamMessageEncoder inputStreamMessageEncoder = new InputStreamMessageEncoder();
 
-        setHandlerSupplier(() -> Arrays.asList(
-                logExceptionChannelHandler,
-                new ChunkedWriteHandler(),
-                inputStreamMessageEncoder // to encode the payload
-        ));
+        if (TransportProtocol.TCP.equals(protocol)) {
+            final LogExceptionChannelHandler logExceptionChannelHandler = new LogExceptionChannelHandler(log);
+            final InputStreamMessageEncoder inputStreamMessageEncoder = new InputStreamMessageEncoder();
+
+            setHandlerSupplier(() -> Arrays.asList(
+                    logExceptionChannelHandler,
+                    new ChunkedWriteHandler(),
+                    inputStreamMessageEncoder // to encode the payload
+            ));
+        }
+
+        if (TransportProtocol.UDP.equals(protocol)) {
+            final LogExceptionChannelHandler logExceptionChannelHandler = new LogExceptionChannelHandler(log);
+            setHandlerSupplier(() -> Arrays.asList(
+                    logExceptionChannelHandler
+            ));
+        }
     }
 }
