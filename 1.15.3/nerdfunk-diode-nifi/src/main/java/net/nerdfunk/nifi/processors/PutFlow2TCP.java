@@ -336,37 +336,46 @@ public class PutFlow2TCP extends AbstractPutFlowProcessor {
             StopWatch stopWatch = new StopWatch(true);
 
             // get channel
-            Channel channel = flowSender.acquireChannel();
+            final Channel channel = flowSender.acquireChannel();
 
             // get attributes
             byte[] attributesAsBytes = objectMapper.writeValueAsBytes(attributeList);
             headerLength = attributesAsBytes.length;
 
-            // send header first
-            if (FLOW_AND_ATTRIBUTES.getValue().equalsIgnoreCase(configured_encoder)) {
-                FlowMessage header = new FlowMessage();
-                header.setHeaderlength(headerLength);
-                header.setPayloadlength(flowFile.getSize());
-                header.setHeader(attributesAsBytes);
-                getLogger().debug("sending header: hl:" + headerLength + " pl: " + flowFile.getSize());
-                flowSender.sendAndFlush(channel, header);
-            }
-            
-            // now send payload
-            session.read(flowFile, new InputStreamCallback() {
-                @Override
-                public void process(final InputStream in) throws IOException {
-                    flowSender.sendAndFlush(channel, in);
+            try {
+
+                // send header first
+                if (FLOW_AND_ATTRIBUTES.getValue().equalsIgnoreCase(configured_encoder)) {
+                    FlowMessage header = new FlowMessage();
+                    header.setHeaderlength(headerLength);
+                    header.setPayloadlength(flowFile.getSize());
+                    header.setHeader(attributesAsBytes);
+                    getLogger().debug("sending header: hl:" + headerLength + " pl: " + flowFile.getSize());
+                    flowSender.sendAndFlush(channel, header);
                 }
-            });
-            flowSender.realeaseChannel(channel);
-            getLogger().debug("finished sending file");
-            session.getProvenanceReporter().send(flowFile, transitUri, stopWatch.getElapsed(TimeUnit.MILLISECONDS));
-            session.transfer(flowFile, REL_SUCCESS);
-            session.commitAsync();
-        } catch (Exception e) {
-            onFailure(context, session, flowFile);
-            getLogger().error("Exception while handling a process session, transferring {} to failure.", new Object[]{flowFile}, e);
+
+                // now send payload
+                session.read(flowFile, new InputStreamCallback() {
+                    @Override
+                    public void process(final InputStream in) throws IOException {
+                        flowSender.sendAndFlush(channel, in);
+                    }
+                });
+
+                getLogger().debug("finished sending file");
+                session.getProvenanceReporter().send(flowFile, transitUri, stopWatch.getElapsed(TimeUnit.MILLISECONDS));
+                session.transfer(flowFile, REL_SUCCESS);
+                session.commitAsync();
+            } catch (final Exception e) {
+                onFailure(context, session, flowFile);
+                getLogger().error("Exception while handling a process session, transferring {} to failure.", new Object[]{flowFile}, e);
+            } finally {
+                flowSender.realeaseChannel(channel);
+            }
+        } catch (final Exception e) {
+                // eg. aquiring channel failed
+                onFailure(context, session, flowFile);
+                getLogger().error("Exception while handling a process session, transferring {} to failure.", new Object[]{flowFile}, e);
         }
     }
 

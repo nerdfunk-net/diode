@@ -22,13 +22,14 @@ Nerdfunk is based on nifi, an open source flow management system (http://nifi.ap
 
 A list of technologies used within the project:
 * [Nifi](http://nifi.apache.org): Version 1.13.2 or
-* [Nifi](http://nifi.apache.org): Version 1.14.0 and
+* [Nifi](http://nifi.apache.org): Version 1.14.0 or newer and
 * [Java](https://adoptopenjdk.net): Version 11
 
 
 ## Installation
 ***
-There are two versions. Version 1.13.2 is the 'old' one that is based on Nifi 1.13.2. This version runs for a longer time now and is tested. Version 1.14.0 is based on Nifi 1.14.0 and the event-transport code (netty). This version was not tested in a procution environment.
+There are two versions. Version 1.13.2 is the 'old' one that is based on Nifi 1.13.2. This version runs for a longer time now and is tested.
+The newer versions (1.14.0 and above) are based on the event-transport code (netty). These version were not tested in a procution environment yet.
 
 The installation is quit simple
 ```
