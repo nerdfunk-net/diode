@@ -52,7 +52,7 @@ import java.util.Set;
  * A base class for processors that send data to an external system using TCP or
  * UDP.
  */
-public abstract class AbstractPutFlow2NetProcessor extends AbstractSessionFactoryProcessor {
+public abstract class AbstractPutFlow2UdpProcessor extends AbstractSessionFactoryProcessor {
 
     public static final PropertyDescriptor HOSTNAME = new PropertyDescriptor.Builder()
             .name("Hostname")
@@ -87,14 +87,14 @@ public abstract class AbstractPutFlow2NetProcessor extends AbstractSessionFactor
 
     public static final AllowableValue TCP_VALUE = new AllowableValue("TCP", "TCP");
     public static final AllowableValue UDP_VALUE = new AllowableValue("UDP", "UDP");
-
+/*
     public static final PropertyDescriptor PROTOCOL = new PropertyDescriptor.Builder().name("Protocol")
             .description("The protocol for communication.")
             .required(true)
             .allowableValues(TCP_VALUE, UDP_VALUE)
             .defaultValue(TCP_VALUE.getValue())
             .build();
-    
+    */
     public static final PropertyDescriptor CHARSET = new PropertyDescriptor.Builder()
             .name("Character Set")
             .description("Specifies the character set of the data being sent.")
@@ -102,6 +102,7 @@ public abstract class AbstractPutFlow2NetProcessor extends AbstractSessionFactor
             .defaultValue("UTF-8")
             .addValidator(StandardValidators.CHARACTER_SET_VALIDATOR)
             .build();
+    /*
     public static final PropertyDescriptor CONNECTION_PER_FLOWFILE = new PropertyDescriptor.Builder()
             .name("Connection Per FlowFile")
             .description("Specifies whether to send each FlowFile's content on an individual connection.")
@@ -109,18 +110,12 @@ public abstract class AbstractPutFlow2NetProcessor extends AbstractSessionFactor
             .defaultValue("true")
             .allowableValues("true", "false")
             .build();
+     */
     public static final PropertyDescriptor THREADS = new PropertyDescriptor.Builder().name("Threads")
             .description("The number of EventLoopGroup Threads")
             .required(true)
             .addValidator(StandardValidators.INTEGER_VALIDATOR)
             .defaultValue("1")
-            .build();
-    public static final PropertyDescriptor SSL_CONTEXT_SERVICE = new PropertyDescriptor.Builder()
-            .name("SSL Context Service")
-            .description("The Controller Service to use in order to obtain an SSL Context. If this property is set, "
-                    + "messages will be sent over a secure connection.")
-            .required(false)
-            .identifiesControllerService(SSLContextService.class)
             .build();
 
     public static final Relationship REL_SUCCESS = new Relationship.Builder()
@@ -139,9 +134,6 @@ public abstract class AbstractPutFlow2NetProcessor extends AbstractSessionFactor
     private Set<Relationship> relationships;
     private List<PropertyDescriptor> descriptors;
     protected volatile String transitUri;
-    private static final String AT_LIST_SEPARATOR = ",";
-    private String address; // the IP addresss to bind
-    private int port; // the tcp port to bind
     private SSLContextService sslContextService;
     protected int writer_idle_time;
     private static final ObjectMapper objectMapper = new ObjectMapper();
@@ -209,8 +201,8 @@ public abstract class AbstractPutFlow2NetProcessor extends AbstractSessionFactor
     /**
      * is called when the processors is started
      * 
-     * @param context
-     * @throws IOException 
+     * @param context ProcessContext
+     * @throws IOException IOException
      */
     @OnScheduled
     public void onScheduled(final ProcessContext context) throws IOException {
@@ -240,7 +232,6 @@ public abstract class AbstractPutFlow2NetProcessor extends AbstractSessionFactor
      * @OnScheduled method of this class.
      *
      * @param context the current context
-     *
      * @return the transit uri
      */
     protected abstract String createTransitUri(final ProcessContext context);
@@ -258,7 +249,7 @@ public abstract class AbstractPutFlow2NetProcessor extends AbstractSessionFactor
      * called by Flow2tcpChannelInboundHandler if the channel is active
      * put any code here that must be executed before any other data is sent
      * 
-     * @param channelHandlerContext 
+     * @param channelHandlerContext ChannelHandlerContext
      */
     public void channelActive(ChannelHandlerContext channelHandlerContext) {
     }
@@ -266,7 +257,7 @@ public abstract class AbstractPutFlow2NetProcessor extends AbstractSessionFactor
     /**
      * called by Flow2tcpChannelInboundHandler if channel is inactive
      * 
-     * @param channelHandlerContext 
+     * @param channelHandlerContext ChannelHandlerContext
      */
     public void channelInactive(ChannelHandlerContext channelHandlerContext) {
     }
@@ -274,15 +265,15 @@ public abstract class AbstractPutFlow2NetProcessor extends AbstractSessionFactor
     /**
      * called by Flow2tcpChannelInboundHandler if any data was received by the sender
      * 
-     * @param channelHandlerContext
-     * @param input 
+     * @param channelHandlerContext channelHandlerContext
+     * @param input ByteBuf
      */
     public void channelRead0(ChannelHandlerContext channelHandlerContext, ByteBuf input) {
     }
 
     /**
      * called by Flow2tcpChannelInboundHandler if channel was unregistered (closed)
-     * @param channelHandlerContext 
+     * @param channelHandlerContext ChannelHandlerContext
      */
     public void channelUnregistered(ChannelHandlerContext channelHandlerContext) {
         
@@ -294,10 +285,10 @@ public abstract class AbstractPutFlow2NetProcessor extends AbstractSessionFactor
      * @param protocol the protocol for the sender
      * @param host the host/IP to send to
      * @param port the port to send to
-     * @param threads
-     * @param sslContextService
+     * @param threads number of Threads
+     * @param sslContextService sslContextService
      * @param maxSendBufferSize the maximum size of the socket send buffer
-     * @param channelinitializer
+     * @param channelinitializer channelinitializer
      * @param sslContext an SSLContext, or null if not using SSL
      *
      * @return a ChannelSender based on the given properties
@@ -315,8 +306,8 @@ public abstract class AbstractPutFlow2NetProcessor extends AbstractSessionFactor
             final SSLContext sslContext) throws IOException {
 
         ChannelSender sender;
-        this.address = host;
-        this.port = port;
+        // the IP addresss to bind
+        // the tcp port to bind
         this.sslContextService = sslContextService;
 
         if (protocol.equals(UDP_VALUE.getValue())) {
@@ -378,7 +369,7 @@ public abstract class AbstractPutFlow2NetProcessor extends AbstractSessionFactor
     /**
      * helper function to convert String to json object
      * 
-     * @param value
+     * @param value String
      * @return json object
      */
     private static Object tryJson(final String value) {
@@ -392,7 +383,7 @@ public abstract class AbstractPutFlow2NetProcessor extends AbstractSessionFactor
     /**
      * helper function to build a map that contains all flow attributes
      * 
-     * @param flowfile
+     * @param flowfile flowfile
      * @return Map<String, Object>
      */
     protected Map<String, Object> buildAttributesMapForFlowFile(FlowFile flowfile) {
@@ -408,7 +399,7 @@ public abstract class AbstractPutFlow2NetProcessor extends AbstractSessionFactor
 
     /**
      * helper function that converts the map to byte[]
-     * @param atrList
+     * @param atrList AtributeList
      * 
      * @return byte[]
      */

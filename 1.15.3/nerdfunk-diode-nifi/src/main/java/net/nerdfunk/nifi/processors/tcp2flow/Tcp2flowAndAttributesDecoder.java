@@ -34,17 +34,17 @@ public class Tcp2flowAndAttributesDecoder extends ByteToMessageDecoder {
     private final ComponentLog logger;
     private final State initialState;
 
-    public static enum State {
+    public enum State {
         HEADERLENGTH,
         PAYLOADLENGTH,
         HEADER,
-        PAYLOAD;
+        PAYLOAD
     }
 
     /**
      * Tcp2flowDecoder
      * 
-     * @param logger 
+     * @param logger logger
      */
     public Tcp2flowAndAttributesDecoder(final ComponentLog logger) {
         super();
@@ -64,11 +64,9 @@ public class Tcp2flowAndAttributesDecoder extends ByteToMessageDecoder {
      * @param context ChannelHandlerContext
      * @param buf The data
      * @param out The object to use to send data to the next handler 
-     * 
-     * @throws Exception 
      */
     @Override
-    protected void decode(ChannelHandlerContext context, ByteBuf buf, List<Object> out) throws Exception {
+    protected void decode(ChannelHandlerContext context, ByteBuf buf, List<Object> out) {
 
         switch (this.state) {
             case HEADERLENGTH:

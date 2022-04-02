@@ -84,7 +84,7 @@ public class ListenTCP2flow extends AbstractSessionFactoryProcessor {
     public static final PropertyDescriptor IPFILTERLIST = new PropertyDescriptor.Builder()
             .name("ip-filter-list")
             .displayName("IP Filter")
-            .description("Allow connections only from specified Adresses."
+            .description("Allow connections only from specified addresses."
                     + "Uses cidr notation to allow hosts. If empty, all "
                     + "connections are allowed")
             .required(false)
@@ -103,8 +103,8 @@ public class ListenTCP2flow extends AbstractSessionFactoryProcessor {
 
     public static final PropertyDescriptor SSL_CONTEXT_SERVICE = new PropertyDescriptor.Builder()
             .name("SSL Context Service")
-            .description("The Controller Service to use in order to obtain an SSL Context. If this property is set, " +
-                    "messages will be received over a secure connection.")
+            .description("The Controller Service to use in order to obtain an SSL Context. "
+                    + "If this property is set, messages will be received over a secure connection.")
             .required(false)
             .identifiesControllerService(RestrictedSSLContextService.class)
             .build();
@@ -129,6 +129,15 @@ public class ListenTCP2flow extends AbstractSessionFactoryProcessor {
             .defaultValue(FLOW_AND_ATTRIBUTES.getValue())
             .build();
 
+    public static final PropertyDescriptor ADD_IP_AND_PORT_TO_ATTRIBUTE = new PropertyDescriptor.Builder()
+            .name("Add IP and port")
+            .description("If set to true the listening IP address, the sender IP address and "
+                       + "the listening TCP port is added to the attributes.")
+            .required(true)
+            .defaultValue("false")
+            .allowableValues("true", "false")
+            .build();
+
     private static final List<PropertyDescriptor> PROPERTIES = Collections.unmodifiableList(Arrays.asList(
             BIND_ADDRESS,
             PORT,
@@ -136,7 +145,8 @@ public class ListenTCP2flow extends AbstractSessionFactoryProcessor {
             READER_IDLE_TIME,
             SSL_CONTEXT_SERVICE,
             CLIENT_AUTH,
-            ENCODER
+            ENCODER,
+            ADD_IP_AND_PORT_TO_ATTRIBUTE
     ));
 
     public static final Relationship RELATIONSHIP_SUCCESS = new Relationship.Builder()
@@ -146,7 +156,7 @@ public class ListenTCP2flow extends AbstractSessionFactoryProcessor {
 
     public static final Relationship RELATIONSHIP_ERROR = new Relationship.Builder()
             .name("error")
-            .description("Relationship if an error occured.")
+            .description("Relationship if an error occurred.")
             .build();
 
     public static final Set<Relationship> RELATIONSHIPS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
@@ -192,6 +202,7 @@ public class ListenTCP2flow extends AbstractSessionFactoryProcessor {
             int reader_idle_timeout = context.getProperty(READER_IDLE_TIME).evaluateAttributeExpressions().asInteger();
             SSLContextService sslContextService = context.getProperty(SSL_CONTEXT_SERVICE).asControllerService(SSLContextService.class);
             final String configured_encoder = context.getProperty(ENCODER).evaluateAttributeExpressions().getValue();
+            final boolean writeIpAndPort = context.getProperty(ADD_IP_AND_PORT_TO_ATTRIBUTE).evaluateAttributeExpressions().asBoolean();
 
             ClientAuth clientAuth = ClientAuth.REQUIRED;
             final PropertyValue clientAuthProperty = context.getProperty(CLIENT_AUTH);
@@ -207,6 +218,7 @@ public class ListenTCP2flow extends AbstractSessionFactoryProcessor {
                         ipfilterlist,
                         sslContextService,
                         configured_encoder,
+                        writeIpAndPort,
                         RELATIONSHIP_SUCCESS,
                         RELATIONSHIP_ERROR,
                         getLogger());
@@ -231,7 +243,7 @@ public class ListenTCP2flow extends AbstractSessionFactoryProcessor {
     }
 
     /**
-     * Stopps the TCPServer to receive flowfiles over the network
+     * Stops the TCPServer to receive flowfiles over the network
      */
     @OnStopped
     public void stopServer() {
@@ -256,6 +268,7 @@ public class ListenTCP2flow extends AbstractSessionFactoryProcessor {
     private void validateBindAddress(ValidationContext context, Collection<ValidationResult> validationResults) {
         String bindAddress = context.getProperty(BIND_ADDRESS).evaluateAttributeExpressions().getValue();
         try {
+            // result is ignored. We are interested if a exception is thrown
             InetAddress.getByName(bindAddress);
         } catch (UnknownHostException e) {
             String explanation = String.format("'%s' is unknown", BIND_ADDRESS.getDisplayName());
@@ -266,9 +279,9 @@ public class ListenTCP2flow extends AbstractSessionFactoryProcessor {
     /**
      * helper function used by validateBindAddress
      * 
-     * @param subject
-     * @param explanation
-     * @return 
+     * @param subject subject
+     * @param explanation explanation
+     * @return ValidationResult
      */
     private ValidationResult createValidationResult(String subject, String explanation) {
         return new ValidationResult.Builder().subject(subject).valid(false).explanation(explanation).build();

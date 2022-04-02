@@ -17,13 +17,13 @@
 package net.nerdfunk.nifi.processors.flow2udp;
 
 import io.netty.channel.ChannelInitializer;
-import net.nerdfunk.nifi.processors.AbstractPutFlow2NetProcessor;
+import net.nerdfunk.nifi.processors.AbstractPutFlow2UdpProcessor;
 import io.netty.channel.ChannelPipeline;
 import org.apache.nifi.logging.ComponentLog;
 
 public class Flow2udpInitializer extends ChannelInitializer<io.netty.channel.Channel> {
 
-    protected AbstractPutFlow2NetProcessor callback;
+    protected AbstractPutFlow2UdpProcessor callback;
     protected ComponentLog logger;
 
     /**
@@ -33,7 +33,7 @@ public class Flow2udpInitializer extends ChannelInitializer<io.netty.channel.Cha
      * @param logger
      */
     public Flow2udpInitializer(
-            AbstractPutFlow2NetProcessor callback,
+            AbstractPutFlow2UdpProcessor callback,
             ComponentLog logger) {
         
         this.callback = callback;

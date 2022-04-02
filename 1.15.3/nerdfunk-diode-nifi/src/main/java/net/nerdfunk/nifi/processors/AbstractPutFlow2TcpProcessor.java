@@ -47,7 +47,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * A base class for processors that send data to an external system using TCP or UDP.
  */
-public abstract class AbstractPutFlowProcessor extends AbstractSessionFactoryProcessor {
+public abstract class AbstractPutFlow2TcpProcessor extends AbstractSessionFactoryProcessor {
 
     public static final PropertyDescriptor HOSTNAME = new PropertyDescriptor.Builder()
             .name("Hostname")
@@ -112,7 +112,7 @@ public abstract class AbstractPutFlowProcessor extends AbstractSessionFactoryPro
             .name("Connection Per FlowFile")
             .description("Specifies whether to send each FlowFile's content on an individual connection.")
             .required(true)
-            .defaultValue("false")
+            .defaultValue("true")
             .allowableValues("true", "false")
             .build();
     public static final PropertyDescriptor SSL_CONTEXT_SERVICE = new PropertyDescriptor.Builder()
@@ -136,7 +136,6 @@ public abstract class AbstractPutFlowProcessor extends AbstractSessionFactoryPro
     private List<PropertyDescriptor> descriptors;
 
     protected volatile String transitUri;
-    protected volatile String encoder;
     protected FlowSender flowSender;
 
     @Override

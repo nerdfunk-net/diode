@@ -48,6 +48,10 @@ public class Tcp2flowAndAttributesChannelHandler extends SimpleChannelInboundHan
     private FlowFile flowFile;
     private boolean haveActiveSession = false;
     private String ipfilterlist;
+    private boolean addIpAndPort;
+    private String myIpAddress;
+    private String receiverIpAddress;
+    private int myPort;
 
     /**
      * Tcp2flowReceiverHandler
@@ -63,6 +67,10 @@ public class Tcp2flowAndAttributesChannelHandler extends SimpleChannelInboundHan
         this.processSession = null;
         this.flowFile = null;
         this.ipfilterlist = tcp2flowconfiguration.getIpFilterlist();
+        this.myIpAddress = tcp2flowconfiguration.getBindAddressAsString();
+        this.myPort = tcp2flowconfiguration.getPort();
+        this.addIpAndPort = tcp2flowconfiguration.getAddIpAndPort();
+        this.receiverIpAddress = "";
     }
 
     /**
@@ -72,7 +80,10 @@ public class Tcp2flowAndAttributesChannelHandler extends SimpleChannelInboundHan
      */
     @Override
     public void channelActive(ChannelHandlerContext context) {
-                
+
+        // store localAddress for later use
+        this.receiverIpAddress = ((InetSocketAddress )context.channel().localAddress()).getAddress().getHostAddress();
+
         boolean matches = false;
         if (this.ipfilterlist == null) {
             this.ipfilterlist = "0.0.0.0/0";
@@ -170,6 +181,12 @@ public class Tcp2flowAndAttributesChannelHandler extends SimpleChannelInboundHan
 
                 for (String key : map.keySet()) {
                     processSession.putAttribute(this.flowFile, key, String.valueOf(map.get(key)));
+                    // write IP address and port if user wants it
+                    if (this.addIpAndPort) {
+                        processSession.putAttribute(this.flowFile, "tcp.sender", this.receiverIpAddress);
+                        processSession.putAttribute(this.flowFile, "tcp.receiver", myIpAddress);
+                        processSession.putAttribute(this.flowFile, "tcp.receiver_port", Integer.toString(myPort));
+                    }
                 }
             }
             processSession.getProvenanceReporter().modifyContent(this.flowFile);

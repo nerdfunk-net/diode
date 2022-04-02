@@ -53,7 +53,7 @@ import org.apache.nifi.processor.util.StandardValidators;
 @CapabilityDescription("Listens for incoming UDP connections and reads data from each connection. ")
 @SeeAlso(PutFlow2UDP.class)
 @InputRequirement(InputRequirement.Requirement.INPUT_FORBIDDEN)
-public class ListenUDP2flow extends AbstractListen2flowProcessor {
+public class ListenUDP2flow extends AbstractListenUdp2flowProcessor {
 
     private volatile Udp2flow udp2flow;
     private Configuration udp2flowconfiguration;

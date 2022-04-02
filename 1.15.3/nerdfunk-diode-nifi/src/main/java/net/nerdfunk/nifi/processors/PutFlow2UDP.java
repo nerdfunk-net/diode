@@ -43,7 +43,7 @@ import net.nerdfunk.nifi.processors.flow2udp.Flow2udpInitializer;
 @CapabilityDescription("Writes flow including attributes to via UDP to an ListenUDP Processor.")
 @InputRequirement(Requirement.INPUT_REQUIRED)
 @SeeAlso(ListenTCP2flow.class)
-public class PutFlow2UDP extends AbstractPutFlow2NetProcessor {
+public class PutFlow2UDP extends AbstractPutFlow2UdpProcessor {
 
     private int payloadIdentifier;
 

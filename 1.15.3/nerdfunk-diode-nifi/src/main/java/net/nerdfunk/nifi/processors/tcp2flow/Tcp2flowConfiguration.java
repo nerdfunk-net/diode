@@ -34,26 +34,27 @@ public class Tcp2flowConfiguration {
     private final String ipfilterlist;
     private final SSLContextService sslContextService;
     private final String encoder;
+    private final boolean addIpAndPort;
     private final Relationship relationship_success;
     private final Relationship relationship_error;
     private final ComponentLog logger;
 
-    private volatile CountDownLatch sessionFactorySetSignal;
+    private final CountDownLatch sessionFactorySetSignal;
     private AtomicReference<ProcessSessionFactory> sessionFactory;
 
     /**
      * constructor
      *
-     * @param bindAddress
-     * @param port
-     * @param reader_idle_timeout
-     * @param ipfilterlist
-     * @param sslContextService
-     * @param encoder
-     * @param relationship_success
-     * @param relationship_error
-     * @param logger
-     * @throws UnknownHostException
+     * @param bindAddress Binding Address
+     * @param port Port used
+     * @param reader_idle_timeout Timeout
+     * @param ipfilterlist IP filter list
+     * @param sslContextService sslContextService
+     * @param encoder Which encoder to use
+     * @param relationship_success Relationship Success
+     * @param relationship_error Relationship Error
+     * @param logger Logger
+     * @throws UnknownHostException UnknownHostException
      */
     public Tcp2flowConfiguration(
             String bindAddress,
@@ -62,6 +63,7 @@ public class Tcp2flowConfiguration {
             String ipfilterlist,
             SSLContextService sslContextService,
             String encoder,
+            boolean addIpAndPort,
             Relationship relationship_success,
             Relationship relationship_error,
             ComponentLog logger) throws UnknownHostException {
@@ -73,6 +75,7 @@ public class Tcp2flowConfiguration {
         this.ipfilterlist = ipfilterlist;
         this.sslContextService = sslContextService;
         this.encoder = encoder;
+        this.addIpAndPort = addIpAndPort;
         this.relationship_success = relationship_success;
         this.relationship_error = relationship_error;
         this.logger = logger;
@@ -85,7 +88,7 @@ public class Tcp2flowConfiguration {
     /**
      * returns IP Filterlist
      *
-     * @return
+     * @return String
      */
     public String getIpFilterlist() {
         return ipfilterlist;
@@ -103,7 +106,7 @@ public class Tcp2flowConfiguration {
     /**
      *  sets SSL Context
      * 
-     * @return 
+     * @return SSLContextService
      */
     public SSLContextService getSslContextService() {
         return sslContextService;
@@ -128,7 +131,7 @@ public class Tcp2flowConfiguration {
     /**
      * sets session factory
      * 
-     * @param sessionFactory 
+     * @param sessionFactory sessionFactory
      */
     public void setSessionFactory(AtomicReference<ProcessSessionFactory> sessionFactory) {
         this.sessionFactory = sessionFactory;
@@ -137,9 +140,9 @@ public class Tcp2flowConfiguration {
     /**
      * returns the session factory with compareAndSet
      *
-     * @param expect
-     * @param update
-     * @return
+     * @param expect ProcessSessionFactory
+     * @param update ProcessSessionFactory
+     * @return boolean
      */
     public boolean sessionFactoryCompareAndSet(ProcessSessionFactory expect, ProcessSessionFactory update) {
         return sessionFactory.compareAndSet(expect, update);
@@ -148,7 +151,7 @@ public class Tcp2flowConfiguration {
     /**
      * returns the bind Address
      *
-     * @return
+     * @return InetAddress
      */
     public InetAddress getBindAddress() {
         return bindAddress;
@@ -157,7 +160,7 @@ public class Tcp2flowConfiguration {
     /**
      * returns the bind Address as string
      *
-     * @return
+     * @return String
      */
     public String getBindAddressAsString() {
         return bindAddress_asString;
@@ -208,11 +211,20 @@ public class Tcp2flowConfiguration {
     }
 
     /**
-     * returns the Encoer 
+     * returns the Encoder
      *
      * @return integer
      */
     public String getEncoder() {
         return encoder;
+    }
+
+    /**
+     * returns the addIpAndPort
+     *
+     * @return integer
+     */
+    public boolean getAddIpAndPort() {
+        return addIpAndPort;
     }
 }

@@ -22,7 +22,6 @@ import net.nerdfunk.nifi.flow.transport.netty.channel.LogExceptionChannelHandler
 import java.util.Arrays;
 import net.nerdfunk.nifi.flow.transport.netty.NettyFlowServerFactory;
 import static net.nerdfunk.nifi.processors.ListenTCP2flow.FLOW_AND_ATTRIBUTES;
-import static net.nerdfunk.nifi.processors.ListenTCP2flow.FLOW_ONLY;
 import net.nerdfunk.nifi.flow.transport.netty.codec.SocketByteArrayMessageDecoder;
 import net.nerdfunk.nifi.flow.transport.netty.channel.Tcp2flowAndAttributesChannelHandler;
 import net.nerdfunk.nifi.flow.transport.netty.channel.Tcp2flowContentOnlyChannelHandler;
@@ -35,7 +34,7 @@ public class Tcp2flowNettyFlowServerFactory extends NettyFlowServerFactory {
     /**
      * Netty Event Server Factory to receive a flow with attributes via TCP
      *
-     * @param tcp2flowconfiguration
+     * @param tcp2flowconfiguration Tcp2flowConfiguration
      */
     public Tcp2flowNettyFlowServerFactory(final Tcp2flowConfiguration tcp2flowconfiguration) {
         super(tcp2flowconfiguration.getBindAddressAsString() ,

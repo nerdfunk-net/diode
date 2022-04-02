@@ -16,8 +16,6 @@
  */
 package net.nerdfunk.nifi.processors;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.nifi.annotation.behavior.InputRequirement;
 import org.apache.nifi.annotation.behavior.InputRequirement.Requirement;
@@ -38,7 +36,6 @@ import org.apache.nifi.processor.ProcessSessionFactory;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.io.InputStreamCallback;
 import org.apache.nifi.util.StopWatch;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collections;
@@ -54,7 +51,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.nifi.flowfile.attributes.CoreAttributes;
 import org.apache.nifi.processor.util.StandardValidators;
 import io.netty.channel.Channel;
-import org.apache.nifi.annotation.lifecycle.OnScheduled;
 import org.apache.nifi.components.AllowableValue;
 
 /**
@@ -75,8 +71,8 @@ import org.apache.nifi.components.AllowableValue;
  * <p>
  * This processor has the following optional properties:
  * <ul>
- * <li><b>Connection Per FlowFile</b> - Specifies that each FlowFiles content
- * will be transmitted on a separate TCP connection.</li>
+ * <li><b>Connection Per FlowFile</b> - Specifies that each FlowFile
+ * will be transmitted using a new TCP connection.</li>
  * <li><b>Idle Connection Expiration</b> - The time threshold after which a TCP
  * sender is deemed eligible for pruning - the associated TCP connection will be
  * closed after this timeout.</li>
@@ -102,16 +98,16 @@ import org.apache.nifi.components.AllowableValue;
  * </p>
  *
  */
-@CapabilityDescription("The PutFlow2TCP processor receives a FlowFile and transmits the FlowFile content and its attributes over a TCP connection to the configured TCP server. "
-        + "By default, the FlowFiles are transmitted over the same TCP connection (or pool of TCP connections if multiple input threads are configured). "
-        + "An optional \"Connection Per FlowFile\" parameter can be "
-        + "specified to change the behaviour so that each FlowFiles content is transmitted over a single TCP connection which is opened when the FlowFile "
-        + "is received and closed after the FlowFile has been sent. This option should only be used for low message volume scenarios, otherwise the platform " + "may run out of TCP sockets.")
+@CapabilityDescription("The PutFlow2TCP processor receives a FlowFile and transmits the FlowFile content "
+        + "and its attributes over a TCP connection to the configured ListenTCP2flow processor. "
+        + "By default, the FlowFile is transmitted over a new TCP connection which is opened when the "
+        + "FlowFile is received. An optional \"Connection Per FlowFile\" parameter can be specified to "
+        + "change the behaviour so that multiple flowfiles are transmitted using the same TCP connection.")
 @InputRequirement(Requirement.INPUT_REQUIRED)
 @SeeAlso(ListenTCP2flow.class)
 @Tags({"remote", "egress", "put", "tcp", "flow", "tcp2flow"})
 @TriggerWhenEmpty // trigger even when queue is empty so that the processor can check for idle senders to prune.
-public class PutFlow2TCP extends AbstractPutFlowProcessor {
+public class PutFlow2TCP extends AbstractPutFlow2TcpProcessor {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final String AT_LIST_SEPARATOR = ",";
@@ -136,15 +132,6 @@ public class PutFlow2TCP extends AbstractPutFlowProcessor {
             .expressionLanguageSupported(true)
             .addValidator(StandardValidators.createRegexValidator(0, Integer.MAX_VALUE, true))
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-            .build();
-
-    public static final PropertyDescriptor INCLUDE_ATTRIBUTES = new PropertyDescriptor.Builder()
-            .name("Include Attributes")
-            .description("Determines if the FlowFile attributes which are "
-                    + "contained in every FlowFile should be sent to the destination.")
-            .required(true)
-            .allowableValues("true", "false")
-            .defaultValue("true")
             .build();
 
     public static final PropertyDescriptor INCLUDE_CORE_ATTRIBUTES = new PropertyDescriptor.Builder()
@@ -194,14 +181,6 @@ public class PutFlow2TCP extends AbstractPutFlowProcessor {
         return new StringBuilder().append(protocol).append("://").append(host).append(":").append(port).toString();
     }
 
-    private static Object tryJson(final String value) {
-        try {
-            return objectMapper.readValue(value, JsonNode.class);
-        } catch (final JsonProcessingException e) {
-            return value;
-        }
-    }
-
     /**
      * Get the additional properties that are used by this processor.
      *
@@ -224,11 +203,11 @@ public class PutFlow2TCP extends AbstractPutFlowProcessor {
      * Builds the Map of attributes that should be included in the JSON that 
      * is emitted from this process.
      *
-     * @param ff
-     * @param attributes
-     * @param attributesToRemove
-     * @param nullValForEmptyString
-     * @param attPattern
+     * @param ff flowFile
+     * @param attributes attributes
+     * @param attributesToRemove attributesToRemove
+     * @param nullValForEmptyString nullValForEmptyString
+     * @param attPattern attPattern
      * @return Map of values that are feed to a Jackson ObjectMapper
      */
     protected Map<String, String> buildAttributesMapForFlowFile(
@@ -357,7 +336,7 @@ public class PutFlow2TCP extends AbstractPutFlowProcessor {
                 // now send payload
                 session.read(flowFile, new InputStreamCallback() {
                     @Override
-                    public void process(final InputStream in) throws IOException {
+                    public void process(final InputStream in) {
                         flowSender.sendAndFlush(channel, in);
                     }
                 });
@@ -403,11 +382,11 @@ public class PutFlow2TCP extends AbstractPutFlowProcessor {
     /**
      * returns the NettyFlowAndAttributesSenderFactory
      * 
-     * @param context
-     * @param hostname
-     * @param port
-     * @param protocol
-     * @return 
+     * @param context ProcessContext
+     * @param hostname hostname
+     * @param port port
+     * @param protocol protocol
+     * @return NettyFlowSenderFactory<?>
      */
     @Override
     protected NettyFlowSenderFactory<?> getNettyFlowSenderFactory(

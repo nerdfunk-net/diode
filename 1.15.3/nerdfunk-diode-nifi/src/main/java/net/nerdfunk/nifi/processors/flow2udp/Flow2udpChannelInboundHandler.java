@@ -16,7 +16,7 @@
  */
 package net.nerdfunk.nifi.processors.flow2udp;
 
-import net.nerdfunk.nifi.processors.AbstractPutFlow2NetProcessor;
+import net.nerdfunk.nifi.processors.AbstractPutFlow2UdpProcessor;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -25,14 +25,14 @@ import io.netty.handler.timeout.IdleState;
 
 public class Flow2udpChannelInboundHandler extends SimpleChannelInboundHandler<ByteBuf>  {
     
-    private final AbstractPutFlow2NetProcessor callback;
+    private final AbstractPutFlow2UdpProcessor callback;
     
     public Flow2udpChannelInboundHandler() {
         super();
         this.callback = null;
     }
 
-    public Flow2udpChannelInboundHandler(AbstractPutFlow2NetProcessor callback) {
+    public Flow2udpChannelInboundHandler(AbstractPutFlow2UdpProcessor callback) {
         this.callback = callback;
     }
     

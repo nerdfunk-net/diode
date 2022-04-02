@@ -44,7 +44,7 @@ import org.apache.nifi.processor.util.StandardValidators;
 /**
  * A base class for processors that receive flow over the network
  */
-public abstract class AbstractListen2flowProcessor extends AbstractSessionFactoryProcessor {
+public abstract class AbstractListenUdp2flowProcessor extends AbstractSessionFactoryProcessor {
 
     public static final Relationship REL_SUCCESS = new Relationship.Builder()
             .name("success")

@@ -1,2 +1,6 @@
-/1.14.0/nerdfunk-diode-nifi/target/
-/1.15.0/nerdfunk-diode-nifi/target/
+target/*
+*/target/*
+*.iml
+*~
+.*
+!/.gitignore
