@@ -14,12 +14,13 @@ echo 01 > ca/root-ca/db/root-ca.crt.srl
 echo 01 > ca/root-ca/db/root-ca.crl.srl
 
 echo ""
-echo Create CA signing request (CSR)
+echo "Create CA signing request (CSR)"
 echo ""
 openssl req -new \
     -config etc/root-ca.conf \
     -out ca/root-ca.csr \
-    -keyout ca/root-ca/private/root-ca.key
+    -keyout ca/root-ca/private/root-ca.key \
+	-passout file:etc/password
 
 echo ""
 echo Self Signing CA certificate request
@@ -28,7 +29,9 @@ openssl ca -selfsign \
     -config etc/root-ca.conf \
     -in ca/root-ca.csr \
     -out ca/root-ca.crt \
-    -extensions root_ca_ext
+    -extensions root_ca_ext \
+	-passin file:etc/password \
+	-batch
 
 echo ""
 echo Create Signing CA
@@ -50,7 +53,8 @@ echo ""
 openssl req -new \
     -config etc/signing-ca.conf \
     -out ca/signing-ca.csr \
-    -keyout ca/signing-ca/private/signing-ca.key
+    -keyout ca/signing-ca/private/signing-ca.key \
+	-passout file:etc/password
 
 echo ""
 echo Signing signing-CA request
@@ -59,7 +63,9 @@ openssl ca \
     -config etc/root-ca.conf \
     -in ca/signing-ca.csr \
     -out ca/signing-ca.crt \
-    -extensions signing_ca_ext
+    -extensions signing_ca_ext \
+	-passin file:etc/password \
+	-batch
 
 echo ""
 echo Creating PEM bundle
