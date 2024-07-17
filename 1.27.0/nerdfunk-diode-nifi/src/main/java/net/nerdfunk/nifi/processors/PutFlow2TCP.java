@@ -24,6 +24,7 @@ import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.components.PropertyDescriptor;
+import org.apache.nifi.expression.ExpressionLanguageScope;
 import net.nerdfunk.nifi.flow.transport.netty.NettyFlowSenderFactory;
 import net.nerdfunk.nifi.flow.transport.netty.NettyFlowAndAttributesSenderFactory;
 import net.nerdfunk.nifi.flow.transport.netty.NettyFlowContentOnlySenderFactory;
@@ -106,7 +107,7 @@ import org.apache.nifi.components.AllowableValue;
 @InputRequirement(Requirement.INPUT_REQUIRED)
 @SeeAlso(ListenTCP2flow.class)
 @Tags({"remote", "egress", "put", "tcp", "flow", "tcp2flow"})
-@TriggerWhenEmpty // trigger even when queue is empty so that the processor can check for idle senders to prune.
+//@TriggerWhenEmpty // trigger even when queue is empty so that the processor can check for idle senders to prune.
 public class PutFlow2TCP extends AbstractPutFlow2TcpProcessor<InputStream, FlowMessage> {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
@@ -129,7 +130,7 @@ public class PutFlow2TCP extends AbstractPutFlow2TcpProcessor<InputStream, FlowM
                     + "the matching attributes. This property can be used in combination with the attributes "
                     + "list property.")
             .required(false)
-            .expressionLanguageSupported(true)
+            .expressionLanguageSupported(ExpressionLanguageScope.ENVIRONMENT)
             .addValidator(StandardValidators.createRegexValidator(0, Integer.MAX_VALUE, true))
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
             .build();
@@ -278,12 +279,12 @@ public class PutFlow2TCP extends AbstractPutFlow2TcpProcessor<InputStream, FlowM
      */
     @Override
     public void onTrigger(final ProcessContext context, final ProcessSessionFactory sessionFactory) throws ProcessException {
-        final String configured_encoder = context.getProperty(ENCODER).evaluateAttributeExpressions().getValue();
         final ProcessSession session = sessionFactory.createSession();
         final FlowFile flowFile = session.get();
         if (flowFile == null) {
             return;
         }
+        getLogger().debug("got flowfile to process with {} bytes", flowFile.getSize());
 
         /*
          * prepare attributes
@@ -319,7 +320,7 @@ public class PutFlow2TCP extends AbstractPutFlow2TcpProcessor<InputStream, FlowM
             headerLength = attributesAsBytes.length;
 
             try {
-
+                final String configured_encoder = context.getProperty(ENCODER).evaluateAttributeExpressions().getValue();
                 // send header first
                 if (FLOW_AND_ATTRIBUTES.getValue().equalsIgnoreCase(configured_encoder)) {
                     FlowMessage header = new FlowMessage();

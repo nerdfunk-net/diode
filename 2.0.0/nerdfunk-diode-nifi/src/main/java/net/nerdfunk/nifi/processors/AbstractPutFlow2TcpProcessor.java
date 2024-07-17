@@ -68,13 +68,13 @@ public abstract class AbstractPutFlow2TcpProcessor<T,U> extends AbstractSessionF
             .defaultValue("1 MB")
             .required(true)
             .build();
-    public static final PropertyDescriptor IDLE_EXPIRATION = new PropertyDescriptor
-            .Builder().name("Idle Connection Expiration")
-            .description("The amount of time a connection should be held open without being used before closing the connection.")
-            .required(true)
-            .defaultValue("5 seconds")
-            .addValidator(StandardValidators.TIME_PERIOD_VALIDATOR)
-            .build();
+//     public static final PropertyDescriptor IDLE_EXPIRATION = new PropertyDescriptor
+//             .Builder().name("Idle Connection Expiration")
+//             .description("The amount of time a connection should be held open without being used before closing the connection.")
+//             .required(true)
+//             .defaultValue("5 seconds")
+//             .addValidator(StandardValidators.TIME_PERIOD_VALIDATOR)
+//             .build();
 
     public static final PropertyDescriptor CHARSET = new PropertyDescriptor.Builder()
             .name("Character Set")
@@ -128,7 +128,7 @@ public abstract class AbstractPutFlow2TcpProcessor<T,U> extends AbstractSessionF
         descriptors.add(HOSTNAME);
         descriptors.add(PORT);
         descriptors.add(MAX_SOCKET_SEND_BUFFER_SIZE);
-        descriptors.add(IDLE_EXPIRATION);
+        //descriptors.add(IDLE_EXPIRATION);
         descriptors.add(TIMEOUT);
         descriptors.addAll(getAdditionalProperties());
         this.descriptors = Collections.unmodifiableList(descriptors);
