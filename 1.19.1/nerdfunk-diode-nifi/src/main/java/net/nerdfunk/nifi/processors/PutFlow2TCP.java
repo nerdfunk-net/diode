@@ -106,7 +106,7 @@ import org.apache.nifi.components.AllowableValue;
 @InputRequirement(Requirement.INPUT_REQUIRED)
 @SeeAlso(ListenTCP2flow.class)
 @Tags({"remote", "egress", "put", "tcp", "flow", "tcp2flow"})
-@TriggerWhenEmpty // trigger even when queue is empty so that the processor can check for idle senders to prune.
+//@TriggerWhenEmpty // trigger even when queue is empty so that the processor can check for idle senders to prune.
 public class PutFlow2TCP extends AbstractPutFlow2TcpProcessor<InputStream, FlowMessage> {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();

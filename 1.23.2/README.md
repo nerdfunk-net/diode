@@ -2,9 +2,9 @@
  ***
  Make your network resilient
  
-This is version 1.19.1
+This is version 1.23.2
 
-There are a lot of changes in 1.19.x This Version is not yet tested!!!
+This version was tested over a longer period of time!
 
 ## Table of Contents
 1. [General Info](#general-info)
@@ -23,7 +23,7 @@ nerdfunk is a nifi based Diode to transfer data to a separate network.
 Nerdfunk is based on nifi, an open source flow management system (http://nifi.apache.org)
 
 A list of technologies used within the project:
-* [Nifi](http://nifi.apache.org): Version 1.19.1
+* [Nifi](http://nifi.apache.org): Version 1.23.2
 * [Java](https://adoptopenjdk.net): Version 11
 
 

@@ -4,7 +4,7 @@
  
 This is version 1.19.1
 
-There are a lot of changes in 1.19.x This Version is not yet tested!!!
+This version was tested over a longer period of time.
 
 ## Table of Contents
 1. [General Info](#general-info)
