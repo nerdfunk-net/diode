@@ -19,7 +19,6 @@ package net.nerdfunk.nifi.processors;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.nifi.annotation.behavior.InputRequirement;
 import org.apache.nifi.annotation.behavior.InputRequirement.Requirement;
-import org.apache.nifi.annotation.behavior.TriggerWhenEmpty;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
@@ -107,7 +106,6 @@ import org.apache.nifi.components.AllowableValue;
 @InputRequirement(Requirement.INPUT_REQUIRED)
 @SeeAlso(ListenTCP2flow.class)
 @Tags({"remote", "egress", "put", "tcp", "flow", "tcp2flow"})
-//@TriggerWhenEmpty // trigger even when queue is empty so that the processor can check for idle senders to prune.
 public class PutFlow2TCP extends AbstractPutFlow2TcpProcessor<InputStream, FlowMessage> {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();

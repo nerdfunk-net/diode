@@ -23,7 +23,6 @@ import io.netty.channel.pool.ChannelPool;
 import io.netty.util.concurrent.Future;
 import net.nerdfunk.nifi.flow.transport.FlowException;
 import net.nerdfunk.nifi.flow.transport.FlowSender;
-import net.nerdfunk.nifi.flow.transport.message.FlowMessage;
 
 import java.net.SocketAddress;
 

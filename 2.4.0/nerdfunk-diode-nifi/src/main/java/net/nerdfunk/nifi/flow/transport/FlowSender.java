@@ -17,7 +17,6 @@
 package net.nerdfunk.nifi.flow.transport;
 
 import io.netty.channel.Channel;
-import net.nerdfunk.nifi.flow.transport.message.FlowMessage;
 
 /**
  * Flow Sender
